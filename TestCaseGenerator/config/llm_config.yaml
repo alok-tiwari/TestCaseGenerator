@@ -1,0 +1,34 @@
+llm_providers:
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    base_url: "https://api.openai.com/v1"
+    model: "gpt-4"
+    temperature: 0.3
+    max_tokens: 2000
+    timeout: 30
+    retry_attempts: 3
+    
+  ollama:
+    api_key: ""
+    base_url: "http://localhost:11434"
+    model: "llama3.2"
+    temperature: 0.3
+    max_tokens: 2000
+    timeout: 60
+    retry_attempts: 3
+    
+  custom:
+    api_key: "${CUSTOM_API_KEY}"
+    base_url: "${CUSTOM_ENDPOINT}"
+    model: "custom-model"
+    temperature: 0.3
+    max_tokens: 2000
+    timeout: 30
+    retry_attempts: 3
+
+jira:
+  base_url: "${JIRA_BASE_URL}"
+  username: "${JIRA_USERNAME}"
+  api_token: "${JIRA_API_TOKEN}"
+  timeout: 30
+  retry_attempts: 3
