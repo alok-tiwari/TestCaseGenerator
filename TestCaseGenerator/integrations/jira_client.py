@@ -177,13 +177,13 @@ class JiraClient:
         
         # Generate dummy acceptance criteria
         acceptance_criteria = [
-            "Given a user is logged into the system, When they navigate to the dashboard, Then they should see their personalized content",
-            "Given a user has completed a form, When they click the submit button, Then the data should be saved and a confirmation message displayed",
-            "Given a user is viewing a list of items, When they apply a filter, Then only matching items should be displayed"
+            "Given a DUMMY user is logged into the system, When they navigate to the dashboard, Then they should see their personalized content",
+            "Given a DUMMY user has completed a form, When they click the submit button, Then the data should be saved and a confirmation message displayed",
+            "Given a DUMMY user is viewing a list of items, When they apply a filter, Then only matching items should be displayed"
         ]
         
         # Generate dummy user story
-        user_story = "As a registered user\nI want to access my personalized dashboard\nSo that I can view relevant information quickly"
+        user_story = "As a registered DUMMY user\nI want to access my personalized dashboard\nSo that I can view relevant information quickly"
         
         # Generate dummy labels and components
         labels = ["frontend", "user-experience", "dashboard"]
@@ -324,6 +324,11 @@ class JiraClient:
         # Try to find acceptance criteria in description
         description = fields.get("description", "")
         if description:
+            # Convert rich text description to plain text if needed
+            if isinstance(description, dict):
+                from TestCaseGenerator.fetch_jira_tickets import jira_doc_to_text
+                description = jira_doc_to_text(description)
+            
             # Look for common acceptance criteria patterns
             lines = description.split('\n')
             in_ac_section = False
@@ -368,6 +373,11 @@ class JiraClient:
         # Try to find user story in description
         description = fields.get("description", "")
         if description:
+            # Convert rich text description to plain text if needed
+            if isinstance(description, dict):
+                from TestCaseGenerator.fetch_jira_tickets import jira_doc_to_text
+                description = jira_doc_to_text(description)
+                
             lines = description.split('\n')
             story_lines = []
             in_story_section = False

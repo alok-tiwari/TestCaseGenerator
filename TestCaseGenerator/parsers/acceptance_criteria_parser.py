@@ -204,6 +204,34 @@ class AcceptanceCriteriaParser:
     
     def _create_fallback_criteria(self, text: str) -> ParsedCriteria:
         """Create fallback criteria when parsing fails."""
+        # Try to split simple Given/When/Then patterns
+        if isinstance(text, str):
+            parts = text.split('\n')
+            if len(parts) >= 3:
+                return ParsedCriteria(
+                    given=parts[0].strip(),
+                    when=parts[1].strip(),
+                    then=parts[2].strip(),
+                    original_text=text,
+                    confidence=0.7
+                )
+            
+            # Handle simple Given/When/Then in one line
+            if 'Given' in text and 'When' in text and 'Then' in text:
+                try:
+                    given = text.split('Given')[1].split('When')[0].strip()
+                    when = text.split('When')[1].split('Then')[0].strip()
+                    then = text.split('Then')[1].strip()
+                    return ParsedCriteria(
+                        given=given,
+                        when=when,
+                        then=then,
+                        original_text=text,
+                        confidence=0.8
+                    )
+                except:
+                    pass
+        
         return ParsedCriteria(
             given="the system is in a known state",
             when="the requirement is implemented",

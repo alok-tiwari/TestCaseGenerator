@@ -44,7 +44,14 @@ class JiraIssue(BaseModel):
     summary: str = Field(..., description="Issue summary/title")
     description: Optional[str] = Field(None, description="Issue description")
     issue_type: str = Field(..., description="Issue type (Story, Bug, Task, etc.)")
-    status: Dict[str, Any] = Field(..., description="Current issue status with name and other properties")
+    status: Dict[str, Any] | str = Field(..., description="Current issue status (can be string or dictionary)")
+    
+    @field_validator("status")
+    def normalize_status(cls, v):
+        """Normalize status to always be a dictionary."""
+        if isinstance(v, str):
+            return {"name": v}
+        return v
     priority: str = Field(..., description="Issue priority")
     assignee: Optional[str] = Field(None, description="Assigned user")
     reporter: str = Field(..., description="Issue reporter")

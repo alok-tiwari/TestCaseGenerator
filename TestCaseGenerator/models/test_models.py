@@ -43,7 +43,7 @@ class TestStep(BaseModel):
     
     step_number: int = Field(..., gt=0, description="Step number in sequence")
     action: str = Field(..., min_length=1, description="Action to perform")
-    expected_result: str = Field(..., min_length=1, description="Expected outcome")
+    expected_result: str = Field("Expected result not specified", min_length=1, description="Expected outcome")
     test_data: Optional[str] = Field(None, description="Test data required for this step")
     notes: Optional[str] = Field(None, description="Additional notes or instructions")
     

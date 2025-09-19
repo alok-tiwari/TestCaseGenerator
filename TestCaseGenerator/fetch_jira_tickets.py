@@ -5,6 +5,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+import httpx
 
 # Add project root to Python path to fix import issues
 project_root = Path(__file__).parent.parent
@@ -50,19 +51,22 @@ async def fetch_and_generate_tests():
     print("🚀 Fetching Jira Stories and Generating Test Cases")
     print("=" * 60)
 
-    # Check environment variables
+    # Check mode selection
+    mode = os.getenv("TESTCASE_MODE", "online").lower()
+    
+    # Check environment variables for online mode
     jira_username = os.getenv("JIRA_USERNAME")
     jira_token = os.getenv("JIRA_API_TOKEN")
     jira_url = os.getenv("JIRA_BASE_URL")
     
-    if not jira_username or not jira_token:
-        print("❌ Please set JIRA_USERNAME and JIRA_API_TOKEN environment variables")
-        print("Available environment variables:")
-        for key, value in os.environ.items():
-            if key.startswith('JIRA'):
-                print(f"  {key}={'*' * len(value) if value else 'NOT SET'}")
-        
-        print("\n🔄 Using dummy data instead...")
+    print("Checking Jira credentials...")
+    if not all([os.getenv('JIRA_USERNAME'), os.getenv('JIRA_API_TOKEN')]):
+        print("❌ Missing Jira credentials - please set JIRA_USERNAME and JIRA_API_TOKEN")
+        sys.exit(1)
+
+    print("✅ Found valid Jira credentials - proceeding with online mode")
+    
+    if mode == "local":
         use_dummy = True
     else:
         print(f"✅ Found Jira credentials for: {jira_username}")
@@ -71,19 +75,19 @@ async def fetch_and_generate_tests():
         
         # Verify connection works before proceeding
         try:
-            auth_str = f"{jira_username}:{jira_token}"
-            headers = {
-                "Authorization": "Basic " + base64.b64encode(auth_str.encode()).decode(),
-                "Accept": "application/json"
-            }
+            import base64
+            # Test Jira connection
+            auth_str = f"{os.getenv('JIRA_USERNAME')}:{os.getenv('JIRA_API_TOKEN')}"
+            encoded_auth = base64.b64encode(auth_str.encode()).decode()
+            headers = {"Authorization": f"Basic {encoded_auth}", "Accept": "application/json"}
+            
             async with httpx.AsyncClient(headers=headers) as session:
-                test_url = f"{jira_url}/rest/api/3/issue/SJP-2"
-                test_resp = await session.get(test_url)
-                test_resp.raise_for_status()
+                response = await session.get(f"{os.getenv('JIRA_BASE_URL')}/rest/api/2/myself")
+                response.raise_for_status()
+                print(f"✅ Successfully connected to Jira as {response.json()['displayName']}")
         except Exception as e:
-            print(f"❌ Jira connection test failed: {e}")
-            print("🔄 Using dummy data instead...")
-            use_dummy = True
+            print(f"❌ Jira connection failed: {str(e)}")
+            sys.exit(1)
 
     # Get configuration
     try:
@@ -113,16 +117,37 @@ async def fetch_and_generate_tests():
         print(f"❌ Failed to create Jira client: {e}")
         return
 
-    tickets_to_fetch = ["SJP-2"]
-
+    # Get ticket IDs from environment variable or use default
+    tickets_to_fetch = os.getenv("JIRA_TICKET_IDS", "SJP-2").split(",")
+    
+    # For local mode, read from file
+    if mode == "local":
+        local_file = "dummy_user_story.txt"
+        if not os.path.exists(local_file):
+            with open(local_file, "w") as f:
+                f.write("As a user\nI want to perform an action\nSo that I can achieve a goal")
+            print(f"ℹ️ Created default {local_file} for local mode")
+    
     for ticket_id in tickets_to_fetch:
         print(f"\n📋 Fetching ticket: {ticket_id}")
         print("-" * 40)
         try:
-            # Fetch the ticket (dummy or real)
+            # Fetch the ticket (dummy, local or real)
             if use_dummy:
-                print("📝 Using dummy ticket data...")
-                ticket = jira_client.generate_dummy_ticket(ticket_id)
+                if mode == "local":
+                    print(f"📝 Using local story from {local_file}")
+                    with open(local_file, "r") as f:
+                        local_content = f.read()
+                    ticket = jira_client.generate_dummy_ticket(ticket_id)
+                    ticket.issue.description = local_content
+                    ticket.acceptance_criteria = [
+                        "Given the local story",
+                        "When processed",
+                        "Then test cases should be generated"
+                    ]
+                else:
+                    print("📝 Using dummy ticket data...")
+                    ticket = jira_client.generate_dummy_ticket(ticket_id)
             else:
                 ticket = await jira_client.fetch_ticket(ticket_id)
 
@@ -165,7 +190,16 @@ async def fetch_and_generate_tests():
 
                 # Get acceptance criteria
                 if hasattr(ticket, 'acceptance_criteria') and ticket.acceptance_criteria:
-                    criteria_list = ticket.acceptance_criteria
+                    # Ensure criteria is properly formatted for LLM processing
+                    criteria_list = []
+                    for criteria in ticket.acceptance_criteria:
+                        if isinstance(criteria, dict):
+                            criteria = jira_doc_to_text(criteria)
+                        # Normalize criteria format for LLM
+                        criteria = criteria.strip()
+                        if not criteria.lower().startswith(('given', 'when', 'then')):
+                            criteria = f"Given {criteria}" if not criteria_list else f"Then {criteria}"
+                        criteria_list.append(criteria)
                 else:
                     # Fallback criteria
                     criteria_list = [
@@ -210,8 +244,33 @@ async def fetch_and_generate_tests():
 
             except Exception as e:
                 print(f"❌ Error generating test cases: {e}")
-                import traceback
-                traceback.print_exc()
+                print("🔄 Using fallback test case generation...")
+                # Generate basic test cases from acceptance criteria
+                test_cases = []
+                for criteria in criteria_list:
+                    if "given" in criteria.lower() and "when" in criteria.lower() and "then" in criteria.lower():
+                        parts = [p.strip() for p in criteria.split(",")]
+                        test_cases.append({
+                            "name": f"Verify {parts[-1]}",
+                            "steps": parts
+                        })
+                if not test_cases:
+                    test_cases = [{"name": "Basic test case", "steps": criteria_list}]
+                
+                formatter = GherkinFormatter()
+                formatted_output = formatter.format_test_cases(test_cases, request)
+                
+                filename = f"test_cases_{ticket_id}.feature"
+                with open(filename, "w", encoding="utf-8") as f:
+                    f.write(formatted_output)
+                
+                print(f"💾 Basic test cases saved to: {filename}")
+                print(f"\n📄 Preview of generated test cases:")
+                print("-" * 40)
+                for line in formatted_output.split("\n")[:20]:
+                    print(line)
+                if len(formatted_output.split("\n")) > 20:
+                    print("... (truncated)")
 
         except Exception as e:
             print(f"❌ Error processing {ticket_id}: {e}")
