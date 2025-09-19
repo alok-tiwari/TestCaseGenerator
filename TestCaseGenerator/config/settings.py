@@ -7,6 +7,7 @@ class JiraConfig(BaseModel):
     api_token: str
     timeout: int = 30
     retry_attempts: int = 3
+    user_story_format: str = 'raw'  # 'raw' or 'gherkin'
 
 class LLMProviderConfig(BaseModel):
     api_key: str
@@ -24,6 +25,7 @@ class AppConfig(BaseSettings):
     JIRA_BASE_URL: str
     JIRA_USERNAME: str
     JIRA_API_TOKEN: str
+    JIRA_USER_STORY_FORMAT: str = 'raw'  # 'raw' or 'gherkin'
     
     # LLM settings
     OPENAI_API_KEY: str = ''
@@ -34,7 +36,8 @@ class AppConfig(BaseSettings):
         return JiraConfig(
             base_url=self.JIRA_BASE_URL,
             username=self.JIRA_USERNAME,
-            api_token=self.JIRA_API_TOKEN
+            api_token=self.JIRA_API_TOKEN,
+            user_story_format=self.JIRA_USER_STORY_FORMAT
         )
 
     def get_llm_config(self, provider: str = "ollama") -> LLMProviderConfig:

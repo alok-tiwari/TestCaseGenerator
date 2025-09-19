@@ -14,6 +14,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 # Fix imports to use absolute paths
 from TestCaseGenerator.config.settings import JiraConfig
 from TestCaseGenerator.models.jira_models import JiraTicket, JiraIssue, JiraField
+from TestCaseGenerator.parsers.user_story_parser import UserStoryParser
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,9 @@ class JiraClient:
         # Cache for API responses
         self._cache = {}
         self._cache_ttl = 300  # 5 minutes
+        
+        # Initialize user story parser with configurable format
+        self.story_parser = UserStoryParser(story_format=config.user_story_format)
     
     @retry(
         stop=stop_after_attempt(3),
@@ -368,7 +372,7 @@ class JiraClient:
         return acceptance_criteria
     
     def _extract_user_story(self, fields: Dict[str, Any]) -> Optional[str]:
-        """Extract user story from Jira fields."""
+        """Extract user story from Jira fields using configurable format parsing."""
         
         # Try to find user story in description
         description = fields.get("description", "")
@@ -378,6 +382,13 @@ class JiraClient:
                 from TestCaseGenerator.fetch_jira_tickets import jira_doc_to_text
                 description = jira_doc_to_text(description)
                 
+            # Use the configurable parser to extract user story
+            parsed_story = self.story_parser.parse_user_story(description)
+            if parsed_story:
+                # Return the original text if parsing was successful
+                return parsed_story.original_text
+                
+            # Fallback to original extraction logic if parser fails
             lines = description.split('\n')
             story_lines = []
             in_story_section = False
@@ -407,9 +418,17 @@ class JiraClient:
         for field_name, field_value in fields.items():
             if "story" in field_name.lower() and field_value:
                 if isinstance(field_value, str):
+                    # Try parsing custom field value as well
+                    parsed_story = self.story_parser.parse_user_story(field_value)
+                    if parsed_story:
+                        return parsed_story.original_text
                     return field_value
                 elif isinstance(field_value, list) and field_value:
-                    return '\n'.join([str(s) for s in field_value])
+                    story_text = '\n'.join([str(s) for s in field_value])
+                    parsed_story = self.story_parser.parse_user_story(story_text)
+                    if parsed_story:
+                        return parsed_story.original_text
+                    return story_text
         
         return None
     

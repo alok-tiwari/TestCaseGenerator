@@ -31,8 +31,24 @@ class ParsedUserStory:
 class UserStoryParser:
     """Parser for user stories in various formats."""
     
-    def __init__(self):
-        """Initialize the parser with regex patterns."""
+    def __init__(self, story_format: str = 'raw'):
+        """Initialize the parser with regex patterns.
+        
+        Args:
+            story_format: 'raw' for unstructured text or 'gherkin' for Gherkin format
+        """
+        self.story_format = story_format
+        
+        # Gherkin-specific patterns
+        self.gherkin_patterns = [
+            # Feature: As a... I want to... So that...
+            r"Feature:\s*(.+?)\s*As\s+a\s+(.+?)\s+I\s+want\s+to\s+(.+?)\s+So\s+that\s+(.+)",
+            # As a... I want to... So that... (in Gherkin context)
+            r"As\s+a\s+(.+?)\s+I\s+want\s+to\s+(.+?)\s+So\s+that\s+(.+)",
+            # Multi-line Gherkin format
+            r"As\s+a\s+(.+?)\s*\n\s*I\s+want\s+to\s+(.+?)\s*\n\s+So\s+that\s+(.+)",
+        ]
+        
         # Standard user story patterns
         self.story_patterns = [
             # Standard format: As a... I want to... So that...
@@ -40,7 +56,7 @@ class UserStoryParser:
             # Alternative format: As a... I want... So that...
             r"As\s+a\s+(.+?)\s+I\s+want\s+(.+?)\s+So\s+that\s+(.+)",
             # With line breaks
-            r"As\s+a\s+(.+?)\s*\n\s*I\s+want\s+to\s+(.+?)\s*\n\s*So\s+that\s+(.+)",
+            r"As\s+a\s+(.+?)\s*\n\s*I\s+want\s+to\s+(.+?)\s*\n\s+So\s+that\s+(.+)",
             # With bullet points
             r"•\s*As\s+a\s+(.+?)\s*•\s*I\s+want\s+to\s+(.+?)\s*•\s*So\s+that\s+(.+)",
         ]
@@ -92,6 +108,40 @@ class UserStoryParser:
         if not story_text or not story_text.strip():
             return None
         
+        # Choose parsing strategy based on format
+        if self.story_format == 'gherkin':
+            return self._parse_gherkin_format(story_text)
+        else:  # raw format
+            return self._parse_raw_format(story_text)
+    
+    def _parse_gherkin_format(self, story_text: str) -> Optional[ParsedUserStory]:
+        """Parse Gherkin format user story."""
+        
+        # Try Gherkin-specific patterns first
+        parsed = self._parse_gherkin_patterns(story_text)
+        if parsed:
+            return parsed
+        
+        # Fall back to standard patterns if Gherkin patterns don't match
+        parsed = self._parse_standard_format(story_text)
+        if parsed:
+            return parsed
+        
+        # Try alternative formats
+        parsed = self._parse_alternative_format(story_text)
+        if parsed:
+            return parsed
+        
+        # Try to extract components from unstructured text
+        parsed = self._parse_unstructured_format(story_text)
+        if parsed:
+            return parsed
+        
+        return None
+    
+    def _parse_raw_format(self, story_text: str) -> Optional[ParsedUserStory]:
+        """Parse raw format user story."""
+        
         # Try standard user story format first
         parsed = self._parse_standard_format(story_text)
         if parsed:
@@ -106,6 +156,44 @@ class UserStoryParser:
         parsed = self._parse_unstructured_format(story_text)
         if parsed:
             return parsed
+        
+        return None
+    
+    def _parse_gherkin_patterns(self, text: str) -> Optional[ParsedUserStory]:
+        """Parse Gherkin-specific patterns."""
+        
+        for pattern in self.gherkin_patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+            if match:
+                # Handle different group counts based on pattern
+                if len(match.groups()) == 4:  # Feature: ... As a... I want to... So that...
+                    feature_name = match.group(1).strip()
+                    persona = match.group(2).strip()
+                    action = match.group(3).strip()
+                    value = match.group(4).strip()
+                else:  # As a... I want to... So that...
+                    persona = match.group(1).strip()
+                    action = match.group(2).strip()
+                    value = match.group(3).strip()
+                    feature_name = None
+                
+                if persona and action and value:
+                    confidence = self._calculate_confidence(persona, action, value)
+                    metadata = self._extract_metadata(text)
+                    
+                    # Add Gherkin-specific metadata
+                    if feature_name:
+                        metadata['feature_name'] = feature_name
+                    metadata['format'] = 'gherkin'
+                    
+                    return ParsedUserStory(
+                        persona=persona,
+                        action=action,
+                        value=value,
+                        original_text=text,
+                        confidence=confidence,
+                        metadata=metadata
+                    )
         
         return None
     
@@ -155,6 +243,7 @@ class UserStoryParser:
                 if persona and action and value:
                     confidence = self._calculate_confidence(persona, action, value)
                     metadata = self._extract_metadata(text)
+                    metadata['format'] = self.story_format
                     
                     return ParsedUserStory(
                         persona=persona,
@@ -184,6 +273,7 @@ class UserStoryParser:
                     
                     confidence = self._calculate_confidence(persona, action, value) * 0.8
                     metadata = self._extract_metadata(text)
+                    metadata['format'] = self.story_format
                     
                     return ParsedUserStory(
                         persona=persona,
@@ -227,6 +317,7 @@ class UserStoryParser:
         if persona and action and value:
             confidence = self._calculate_confidence(persona, action, value) * 0.6
             metadata = self._extract_metadata(text)
+            metadata['format'] = self.story_format
             
             return ParsedUserStory(
                 persona=persona,

@@ -199,7 +199,8 @@ def generate(criteria_type, criteria, persona, action, value, tech, data, constr
 @click.option("--provider", default=None)
 @click.option("--dummy", is_flag=True, help="Use dummy Jira data instead of real API")
 @click.option("--output", "output_path", default=None)
-def generate_from_jira(ticket_id, out_format, types, level, priority, provider, dummy, output_path):
+@click.option("--story-format", "story_format", default="raw", type=click.Choice(["raw", "gherkin"]), help="JIRA user story format: 'raw' for unstructured text or 'gherkin' for Gherkin format")
+def generate_from_jira(ticket_id, out_format, types, level, priority, provider, dummy, output_path, story_format):
     """Generate test cases by pulling data from Jira."""
     jira_conf = get_jira_config()
     if not dummy and not jira_conf:
@@ -208,8 +209,13 @@ def generate_from_jira(ticket_id, out_format, types, level, priority, provider, 
     async def _run():
         if dummy:
             jira_client = None
+            # Create a dummy config with the specified story format
+            if jira_conf:
+                jira_conf.user_story_format = story_format
             ticket = JiraClient(jira_conf).generate_dummy_ticket(ticket_id) if jira_conf else JiraClient.__new__(JiraClient).generate_dummy_ticket(ticket_id)  # type: ignore
         else:
+            # Update the config with the specified story format
+            jira_conf.user_story_format = story_format
             jira_client = JiraClient(jira_conf)  # type: ignore
             ticket = await jira_client.fetch_ticket(ticket_id)
         try:
