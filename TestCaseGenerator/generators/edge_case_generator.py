@@ -5,8 +5,8 @@ import re
 from typing import List, Dict, Any, Optional
 
 from .base_generator import BaseTestGenerator
-from ..models.input_models import TestCaseRequest
-from ..models.test_models import TestCase, TestStep, TestType, TestPriority
+from models.input_models import TestCaseRequest
+from models.test_models import TestCase, TestStep, TestType, TestPriority
 
 
 logger = logging.getLogger(__name__)

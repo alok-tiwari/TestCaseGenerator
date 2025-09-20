@@ -7,10 +7,10 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from ..integrations.llm_client import LLMClient
-from ..models.input_models import TestCaseRequest
-from ..models.test_models import TestCase, TestStep, TestData, TestType, TestPriority, TestStatus
-from ..parsers.acceptance_criteria_parser import AcceptanceCriteriaParser
+from integrations.llm_client import LLMClient
+from models.input_models import TestCaseRequest
+from models.test_models import TestCase, TestStep, TestData, TestType, TestPriority, TestStatus
+from parsers.acceptance_criteria_parser import AcceptanceCriteriaParser
 
 
 logger = logging.getLogger(__name__)
@@ -297,27 +297,307 @@ class BaseTestGenerator(ABC):
     
     def _parse_llm_response(self, response: str, request: TestCaseRequest) -> List[TestCase]:
         """Parse LLM response into structured test cases."""
-        # This is a basic parser - specific generators should override this
-        # to handle their specific output formats
-        
         test_cases = []
         
-        # Split response into test case sections
-        sections = response.split('\n\n')
-        
-        for section in sections:
-            if not section.strip():
-                continue
+        try:
+            logger.info("Starting LLM response parsing")
             
-            try:
-                test_case = self._parse_single_test_case(section, request)
-                if test_case:
-                    test_cases.append(test_case)
-            except Exception as e:
-                logger.warning(f"Failed to parse test case section: {e}")
-                continue
+            # Parse the simple TEST_CASE_X format
+            test_case_pattern = r'TEST_CASE_(\d+):\s*(.+?)\n\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\n\nTEST_CASE_|\Z)'
+            matches = re.findall(test_case_pattern, response, re.DOTALL)
+            
+            logger.info(f"First pattern found {len(matches)} matches")
+            
+            # If no matches, try a simpler pattern
+            if not matches:
+                test_case_pattern = r'TEST_CASE_(\d+):\s*(.+?)\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\nTEST_CASE_|\Z)'
+                matches = re.findall(test_case_pattern, response, re.DOTALL)
+                logger.info(f"Second pattern found {len(matches)} matches")
+            
+            logger.info(f"Total matches found: {len(matches)}")
+            
+        except Exception as e:
+            logger.error(f"Error in pattern matching: {e}")
+            matches = []
+        
+        for match in matches:
+            case_num, title, given, when, then = match
+            
+            # Clean up the title
+            title = title.strip()
+            
+            # Create test steps
+            steps = []
+            step_number = 1
+            
+            # Add GIVEN step
+            if given.strip():
+                steps.append(self._create_test_step(
+                    step_number=step_number,
+                    action=given.strip(),
+                    expected_result="Precondition satisfied",
+                    notes="Given step"
+                ))
+                step_number += 1
+            
+            # Add WHEN step
+            if when.strip():
+                steps.append(self._create_test_step(
+                    step_number=step_number,
+                    action=when.strip(),
+                    expected_result="Action completed",
+                    notes="When step"
+                ))
+                step_number += 1
+            
+            # Add THEN step
+            if then.strip():
+                steps.append(self._create_test_step(
+                    step_number=step_number,
+                    action=then.strip(),
+                    expected_result="Expected result achieved",
+                    notes="Then step"
+                ))
+                step_number += 1
+            
+            if steps:
+                test_case = TestCase(
+                    test_id=self._generate_test_id("TC"),
+                    title=title,
+                    description=f"Test case generated from LLM: {title}",
+                    test_type=TestType.FUNCTIONAL,
+                    priority=TestPriority.MEDIUM,
+                    test_level=request.test_specification.test_level,
+                    steps=steps,
+                    tags=["llm-generated", "functional"],
+                    requirements=[f"Generated from JIRA ticket: {request.jira_ticket_id}"] if request.jira_ticket_id else [],
+                    jira_ticket_id=request.jira_ticket_id
+                )
+                test_cases.append(test_case)
+        
+        # If no test cases found with new format, try old format
+        if not test_cases:
+            # Try old format parsing
+            sections = re.split(r'\*\*Test Case \d+:', response)
+            
+            if len(sections) > 1:
+                for i, section in enumerate(sections[1:], 1):
+                    if not section.strip():
+                        continue
+                    
+                    lines = section.strip().split('\n')
+                    title = lines[0].strip() if lines else f"Test Case {i}"
+                    title = re.sub(r'\*\*', '', title).strip()
+                    
+                    steps = []
+                    step_number = 1
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith(("Given ", "When ", "Then ", "And ")):
+                            keyword = line.split()[0]
+                            action = line[len(keyword)+1:].strip()
+                            
+                            step = self._create_test_step(
+                                step_number=step_number,
+                                action=action,
+                                expected_result="Step completed successfully" if keyword in ["Then", "And"] else "Precondition satisfied",
+                                notes=f"{keyword} step"
+                            )
+                            steps.append(step)
+                            step_number += 1
+                    
+                    if steps:
+                        test_case = TestCase(
+                            test_id=self._generate_test_id("TC"),
+                            title=title,
+                            description=f"Test case generated from LLM: {title}",
+                            test_type=TestType.FUNCTIONAL,
+                            priority=TestPriority.MEDIUM,
+                            test_level=request.test_specification.test_level,
+                            steps=steps,
+                            tags=["llm-generated", "functional"],
+                            requirements=[f"Generated from JIRA ticket: {request.jira_ticket_id}"] if request.jira_ticket_id else [],
+                            jira_ticket_id=request.jira_ticket_id
+                        )
+                        test_cases.append(test_case)
         
         return test_cases
+    
+    def _parse_gherkin_response(self, response: str, request: TestCaseRequest) -> List[TestCase]:
+        """Parse Gherkin format response from LLM."""
+        test_cases = []
+        
+        # Remove markdown code blocks
+        response = re.sub(r'```gherkin\n?', '', response)
+        response = re.sub(r'```\n?', '', response)
+        
+        # Remove explanatory text before Gherkin content
+        # Look for the first occurrence of "Feature:" or "Scenario:"
+        feature_match = re.search(r'Feature:', response)
+        scenario_match = re.search(r'Scenario:', response)
+        
+        if feature_match:
+            response = response[feature_match.start():]
+        elif scenario_match:
+            response = response[scenario_match.start():]
+        
+        # Split by test case sections (look for **Test Case X:** patterns)
+        test_case_sections = re.split(r'\*\*Test Case \d+:\s*', response)
+        
+        if len(test_case_sections) > 1:
+            # Parse each test case section
+            for i, section in enumerate(test_case_sections[1:], 1):  # Skip first empty section
+                if not section.strip():
+                    continue
+                
+                try:
+                    test_case = self._parse_test_case_section(section, request, i)
+                    if test_case:
+                        test_cases.append(test_case)
+                except Exception as e:
+                    logger.warning(f"Failed to parse test case section {i}: {e}")
+                    continue
+        else:
+            # Fallback to scenario-based parsing
+            scenarios = re.split(r'\n\s*Scenario(?:\s+Outline)?:', response)
+            
+            # Also try splitting by "Scenario Outline:" specifically
+            if len(scenarios) == 1 and "Scenario Outline:" in response:
+                scenarios = re.split(r'\n\s*Scenario\s+Outline:', response)
+            
+            logger.debug(f"Found {len(scenarios)} scenario sections")
+            
+            for i, scenario in enumerate(scenarios):
+                if not scenario.strip():
+                    continue
+                
+                # Add "Scenario:" back if it was removed by split
+                if i > 0:
+                    scenario = "Scenario:" + scenario
+                
+                logger.debug(f"Processing scenario {i}: {scenario[:100]}...")
+                
+                try:
+                    test_case = self._parse_gherkin_scenario(scenario, request)
+                    if test_case:
+                        test_cases.append(test_case)
+                        logger.debug(f"Successfully parsed scenario {i}")
+                    else:
+                        logger.debug(f"Failed to parse scenario {i} - no test case returned")
+                except Exception as e:
+                    logger.warning(f"Failed to parse Gherkin scenario: {e}")
+                    continue
+        
+        return test_cases
+    
+    def _parse_test_case_section(self, section: str, request: TestCaseRequest, case_number: int) -> Optional[TestCase]:
+        """Parse a test case section from LLM response."""
+        lines = [line.strip() for line in section.split('\n') if line.strip()]
+        
+        if not lines:
+            return None
+        
+        # Extract title from first line, clean it up
+        title = lines[0].strip()
+        # Remove any markdown formatting
+        title = re.sub(r'\*\*', '', title)
+        title = re.sub(r'^#+\s*', '', title)
+        title = title.strip()
+        
+        # Look for Gherkin content in the section
+        gherkin_content = ""
+        in_gherkin = False
+        
+        for line in lines:
+            if "```gherkin" in line or "Feature:" in line:
+                in_gherkin = True
+                continue
+            elif "```" in line and in_gherkin:
+                break
+            elif in_gherkin:
+                gherkin_content += line + "\n"
+        
+        if not gherkin_content:
+            return None
+        
+        # Parse the Gherkin content
+        test_case = self._parse_gherkin_scenario(gherkin_content, request)
+        if test_case:
+            test_case.title = title
+            test_case.description = f"Test case {case_number}: {title}"
+        
+        return test_case
+    
+    def _parse_gherkin_scenario(self, scenario: str, request: TestCaseRequest) -> Optional[TestCase]:
+        """Parse a single Gherkin scenario into a TestCase."""
+        lines = [line.strip() for line in scenario.split('\n') if line.strip()]
+        
+        if not lines:
+            return None
+        
+        # Extract scenario title - look for the first meaningful line
+        title = "Test Scenario"
+        for line in lines:
+            if line and not line.startswith(("Given", "When", "Then", "And", "Examples:", "|", "Background:", "Feature:")):
+                title = line
+                break
+        
+        # Extract steps
+        steps = []
+        step_number = 1
+        
+        for line in lines[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Skip Examples, Background, and other non-step lines
+            if (line.startswith("Examples:") or line.startswith("|") or 
+                line.startswith("Background:") or line.startswith("Feature:") or
+                line.startswith("- ") or line.startswith("Reading:") or 
+                line.startswith("Threshold:") or line.startswith("Sensor type:")):
+                continue
+            
+            # Parse Given/When/Then/And steps
+            if line.startswith(("Given ", "When ", "Then ", "And ")):
+                keyword = line.split()[0]
+                action = line[len(keyword)+1:].strip()  # Remove keyword and space
+                
+                # Handle "And" steps by using the previous keyword context
+                if keyword == "And":
+                    if steps:
+                        keyword = "And"  # Keep as "And" for clarity
+                    else:
+                        keyword = "Given"  # Default to Given if no previous context
+                
+                step = self._create_test_step(
+                    step_number=step_number,
+                    action=action,
+                    expected_result="Step completed successfully" if keyword in ["Then", "And"] else "Precondition satisfied",
+                    notes=f"{keyword} step"
+                )
+                steps.append(step)
+                step_number += 1
+        
+        if not steps:
+            return None
+        
+        # Create test case
+        test_case = TestCase(
+            test_id=self._generate_test_id("TC"),
+            title=title,
+            description=f"Test case generated from LLM: {title}",
+            test_type=TestType.FUNCTIONAL,
+            priority=TestPriority.MEDIUM,
+            test_level=request.test_specification.test_level,
+            steps=steps,
+            tags=["llm-generated", "functional"],
+            requirements=[f"Generated from JIRA ticket: {request.jira_ticket_id}"] if request.jira_ticket_id else [],
+            jira_ticket_id=request.jira_ticket_id
+        )
+        
+        return test_case
     
     def _parse_single_test_case(self, section: str, request: TestCaseRequest) -> Optional[TestCase]:
         """Parse a single test case from text."""

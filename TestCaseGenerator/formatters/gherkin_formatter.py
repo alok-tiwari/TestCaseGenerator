@@ -3,8 +3,8 @@
 import logging
 from typing import List, Dict, Any, Optional
 
-from ..models.test_models import TestCase, TestStep
-from ..models.input_models import TestCaseRequest
+from models.test_models import TestCase, TestStep
+from models.input_models import TestCaseRequest
 
 
 logger = logging.getLogger(__name__)

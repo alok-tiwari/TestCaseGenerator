@@ -12,9 +12,9 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 # Change the relative import
 # Fix imports to use absolute paths
-from TestCaseGenerator.config.settings import JiraConfig
-from TestCaseGenerator.models.jira_models import JiraTicket, JiraIssue, JiraField
-from TestCaseGenerator.parsers.user_story_parser import UserStoryParser
+from config.settings import JiraConfig
+from models.jira_models import JiraTicket, JiraIssue, JiraField
+from parsers.user_story_parser import UserStoryParser
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class JiraClient:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.warning(f"Ticket {ticket_id} not found")
-                raise ValueError(f"Ticket {ticket_id} not found")
+                raise ValueError(f"Ticket {ticket_id} not found. Use --dummy flag for testing with sample data.")
             elif e.response.status_code == 401:
                 logger.error(f"Authentication failed for ticket {ticket_id}")
                 raise ValueError("Authentication failed - check Jira credentials")
@@ -330,7 +330,7 @@ class JiraClient:
         if description:
             # Convert rich text description to plain text if needed
             if isinstance(description, dict):
-                from TestCaseGenerator.fetch_jira_tickets import jira_doc_to_text
+                from fetch_jira_tickets import jira_doc_to_text
                 description = jira_doc_to_text(description)
             
             # Look for common acceptance criteria patterns
@@ -379,7 +379,7 @@ class JiraClient:
         if description:
             # Convert rich text description to plain text if needed
             if isinstance(description, dict):
-                from TestCaseGenerator.fetch_jira_tickets import jira_doc_to_text
+                from fetch_jira_tickets import jira_doc_to_text
                 description = jira_doc_to_text(description)
                 
             # Use the configurable parser to extract user story
@@ -429,6 +429,112 @@ class JiraClient:
                     if parsed_story:
                         return parsed_story.original_text
                     return story_text
+        
+        return None
+    
+    def _extract_system_context(self, fields: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Extract system context from JIRA fields for better LLM understanding."""
+        
+        context = {
+            'tech_stack': [],
+            'data_types': [],
+            'constraints': [],
+            'user_roles': [],
+            'business_domain': None,
+            'priority_level': None,
+            'complexity': None
+        }
+        
+        # Extract from description
+        description = fields.get("description", "")
+        if description:
+            if isinstance(description, dict):
+                from fetch_jira_tickets import jira_doc_to_text
+                description = jira_doc_to_text(description)
+            
+            # Extract technical terms
+            tech_terms = self._extract_technical_terms(description)
+            context['tech_stack'].extend(tech_terms)
+            
+            # Extract business domain
+            domain = self._extract_business_domain(description)
+            if domain:
+                context['business_domain'] = domain
+        
+        # Extract from labels
+        labels = fields.get("labels", [])
+        for label in labels:
+            if any(tech in label.lower() for tech in ['api', 'ui', 'backend', 'frontend', 'database', 'microservice']):
+                context['tech_stack'].append(label)
+            elif any(role in label.lower() for role in ['admin', 'user', 'customer', 'developer', 'manager']):
+                context['user_roles'].append(label)
+        
+        # Extract from components
+        components = fields.get("components", [])
+        for component in components:
+            if isinstance(component, dict):
+                component_name = component.get("name", "")
+                if any(tech in component_name.lower() for tech in ['api', 'ui', 'backend', 'frontend', 'database']):
+                    context['tech_stack'].append(component_name)
+        
+        # Extract priority
+        priority = fields.get("priority", {})
+        if isinstance(priority, dict):
+            priority_name = priority.get("name", "")
+            context['priority_level'] = priority_name.lower()
+        
+        # Extract story points for complexity
+        story_points = fields.get("customfield_10016")  # Common story points field
+        if story_points and isinstance(story_points, (int, float)):
+            if story_points <= 3:
+                context['complexity'] = 'low'
+            elif story_points <= 8:
+                context['complexity'] = 'medium'
+            else:
+                context['complexity'] = 'high'
+        
+        # Add default values if empty
+        if not context['tech_stack']:
+            context['tech_stack'] = ['web application']
+        if not context['user_roles']:
+            context['user_roles'] = ['user']
+        
+        return context
+    
+    def _extract_technical_terms(self, text: str) -> List[str]:
+        """Extract technical terms from text."""
+        import re
+        
+        tech_patterns = [
+            r'\b(api|database|ui|ux|frontend|backend|microservice|container|kubernetes|docker|aws|azure|gcp)\b',
+            r'\b(rest|graphql|json|xml|http|https|ssl|tls|oauth|jwt)\b',
+            r'\b(react|angular|vue|node|python|java|go|rust|c#|php)\b',
+            r'\b(mysql|postgresql|mongodb|redis|elasticsearch|kafka|rabbitmq)\b'
+        ]
+        
+        terms = []
+        text_lower = text.lower()
+        
+        for pattern in tech_patterns:
+            matches = re.findall(pattern, text_lower)
+            terms.extend(matches)
+        
+        return list(set(terms))  # Remove duplicates
+    
+    def _extract_business_domain(self, text: str) -> Optional[str]:
+        """Extract business domain from text."""
+        import re
+        
+        domain_patterns = [
+            r'\b(ecommerce|e-commerce|retail|finance|banking|healthcare|medical|education|learning|manufacturing|logistics|supply chain|hr|human resources|marketing|sales|crm|erp|analytics|reporting|monitoring|alerting|notification|communication|collaboration|project management|task management|workflow|automation|integration|migration|data processing|real-time|iot|sensor|hvac|energy|building management|facility management)\b'
+        ]
+        
+        text_lower = text.lower()
+        
+        for pattern in domain_patterns:
+            matches = re.findall(pattern, text_lower)
+            if matches:
+                return matches[0]
         
         return None
     

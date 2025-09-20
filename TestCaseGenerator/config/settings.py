@@ -8,6 +8,8 @@ class JiraConfig(BaseModel):
     timeout: int = 30
     retry_attempts: int = 3
     user_story_format: str = 'raw'  # 'raw' or 'gherkin'
+    extract_context: bool = True  # Extract system context from JIRA tickets
+    context_detail_level: str = 'medium'  # 'low', 'medium', 'high'
 
 class LLMProviderConfig(BaseModel):
     api_key: str
@@ -26,6 +28,8 @@ class AppConfig(BaseSettings):
     JIRA_USERNAME: str
     JIRA_API_TOKEN: str
     JIRA_USER_STORY_FORMAT: str = 'raw'  # 'raw' or 'gherkin'
+    JIRA_EXTRACT_CONTEXT: bool = True  # Extract system context from JIRA tickets
+    JIRA_CONTEXT_DETAIL_LEVEL: str = 'medium'  # 'low', 'medium', 'high'
     
     # LLM settings
     OPENAI_API_KEY: str = ''
@@ -37,7 +41,9 @@ class AppConfig(BaseSettings):
             base_url=self.JIRA_BASE_URL,
             username=self.JIRA_USERNAME,
             api_token=self.JIRA_API_TOKEN,
-            user_story_format=self.JIRA_USER_STORY_FORMAT
+            user_story_format=self.JIRA_USER_STORY_FORMAT,
+            extract_context=self.JIRA_EXTRACT_CONTEXT,
+            context_detail_level=self.JIRA_CONTEXT_DETAIL_LEVEL
         )
 
     def get_llm_config(self, provider: str = "ollama") -> LLMProviderConfig:
@@ -53,11 +59,18 @@ class AppConfig(BaseSettings):
                 base_url="http://localhost:11434",
                 model="llama3.2"
             )
-        else:
+        elif provider == "custom" and self.CUSTOM_ENDPOINT:
             return LLMProviderConfig(
                 api_key=self.CUSTOM_API_KEY,
                 base_url=self.CUSTOM_ENDPOINT,
                 model="custom-model"
+            )
+        else:
+            # Default to ollama if custom provider is not properly configured
+            return LLMProviderConfig(
+                api_key="",
+                base_url="http://localhost:11434",
+                model="llama3.2"
             )
 
 config = AppConfig()

@@ -5,8 +5,8 @@ import re
 from typing import List, Dict, Any, Optional
 
 from .base_generator import BaseTestGenerator
-from ..models.input_models import TestCaseRequest
-from ..models.test_models import TestCase, TestStep, TestType, TestPriority
+from models.input_models import TestCaseRequest
+from models.test_models import TestCase, TestStep, TestType, TestPriority
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,12 @@ class FunctionalTestGenerator(BaseTestGenerator):
             llm_response = await self._generate_with_llm(request, "functional_test")
             
             # Parse the response
+            logger.info(f"LLM Response length: {len(llm_response)} characters")
+            logger.debug(f"LLM Response: {llm_response[:500]}...")  # Log first 500 chars for debugging
+            logger.debug(f"Full LLM Response: {llm_response}")  # Log full response for debugging
+            
             test_cases = self._parse_llm_response(llm_response, request)
+            logger.info(f"Parsed {len(test_cases)} test cases from LLM response")
             
             # If LLM parsing fails, generate fallback test cases
             if not test_cases:
@@ -59,6 +64,8 @@ class FunctionalTestGenerator(BaseTestGenerator):
             
         except Exception as e:
             logger.error(f"Error generating functional test cases: {e}")
+            logger.error(f"Exception type: {type(e)}")
+            logger.error(f"Exception args: {e.args}")
             # Return fallback test cases on error
             return self._generate_fallback_test_cases(request)
     
@@ -379,20 +386,97 @@ class FunctionalTestGenerator(BaseTestGenerator):
         
         test_cases = []
         
-        # Split response into test case sections
-        sections = response.split('\n\n')
-        
-        for section in sections:
-            if not section.strip():
-                continue
+        try:
+            logger.info("Starting functional LLM response parsing")
             
-            try:
-                test_case = self._parse_functional_test_case(section, request)
-                if test_case:
+            # Parse the simple TEST_CASE_X format
+            test_case_pattern = r'TEST_CASE_(\d+):\s*(.+?)\n\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\n\nTEST_CASE_|\Z)'
+            matches = re.findall(test_case_pattern, response, re.DOTALL)
+            
+            logger.info(f"First pattern found {len(matches)} matches")
+            
+            # If no matches, try a simpler pattern
+            if not matches:
+                test_case_pattern = r'TEST_CASE_(\d+):\s*(.+?)\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\nTEST_CASE_|\Z)'
+                matches = re.findall(test_case_pattern, response, re.DOTALL)
+                logger.info(f"Second pattern found {len(matches)} matches")
+            
+            logger.info(f"Total matches found: {len(matches)}")
+            
+            for match in matches:
+                case_num, title, given, when, then = match
+                
+                # Clean up the title
+                title = title.strip()
+                
+                # Create test steps
+                steps = []
+                step_number = 1
+                
+                # Add GIVEN step
+                if given.strip():
+                    steps.append(self._create_test_step(
+                        step_number=step_number,
+                        action=given.strip(),
+                        expected_result="Precondition satisfied",
+                        notes="Given step"
+                    ))
+                    step_number += 1
+                
+                # Add WHEN step
+                if when.strip():
+                    steps.append(self._create_test_step(
+                        step_number=step_number,
+                        action=when.strip(),
+                        expected_result="Action completed",
+                        notes="When step"
+                    ))
+                    step_number += 1
+                
+                # Add THEN step
+                if then.strip():
+                    steps.append(self._create_test_step(
+                        step_number=step_number,
+                        action=then.strip(),
+                        expected_result="Expected result achieved",
+                        notes="Then step"
+                    ))
+                    step_number += 1
+                
+                if steps:
+                    test_case = TestCase(
+                        test_id=self._generate_test_id("TC"),
+                        title=title,
+                        description=f"Test case generated from LLM: {title}",
+                        test_type=TestType.FUNCTIONAL,
+                        priority=TestPriority.MEDIUM,
+                        test_level=request.test_specification.test_level,
+                        steps=steps,
+                        tags=["llm-generated", "functional"],
+                        requirements=[f"Generated from JIRA ticket: {request.jira_ticket_id}"] if request.jira_ticket_id else [],
+                        jira_ticket_id=request.jira_ticket_id
+                    )
                     test_cases.append(test_case)
-            except Exception as e:
-                logger.warning(f"Failed to parse functional test case section: {e}")
-                continue
+            
+            # If no test cases found with new format, try old format
+            if not test_cases:
+                logger.info("No matches with new format, trying old format")
+                sections = response.split('\n\n')
+                
+                for section in sections:
+                    if not section.strip():
+                        continue
+                    
+                    try:
+                        test_case = self._parse_functional_test_case(section, request)
+                        if test_case:
+                            test_cases.append(test_case)
+                    except Exception as e:
+                        logger.warning(f"Failed to parse functional test case section: {e}")
+                        continue
+        
+        except Exception as e:
+            logger.error(f"Error in functional LLM response parsing: {e}")
         
         return test_cases
     

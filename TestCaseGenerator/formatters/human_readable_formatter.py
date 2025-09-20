@@ -4,8 +4,8 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-from ..models.test_models import TestCase, TestStep
-from ..models.input_models import TestCaseRequest
+from models.test_models import TestCase, TestStep
+from models.input_models import TestCaseRequest
 
 
 logger = logging.getLogger(__name__)
@@ -350,7 +350,7 @@ class HumanReadableFormatter:
         
         try:
             # Create a minimal request for single test case
-            from ..models.input_models import TestCaseRequest, AcceptanceCriteria, TestSpecification
+            from models.input_models import TestCaseRequest, AcceptanceCriteria, TestSpecification
             
             # Create minimal request
             request = TestCaseRequest(

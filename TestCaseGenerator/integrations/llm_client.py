@@ -180,12 +180,13 @@ class CustomProvider(LLMProvider):
     
     def __init__(self, config: LLMProviderConfig):
         self.config = config
+        headers = {"Content-Type": "application/json"}
+        if config.api_key:
+            headers["Authorization"] = f"Bearer {config.api_key}"
+        
         self.client = httpx.AsyncClient(
             base_url=config.base_url,
-            headers={
-                "Authorization": f"Bearer {config.api_key}" if config.api_key else None,
-                "Content-Type": "application/json"
-            },
+            headers=headers,
             timeout=config.timeout
         )
     
@@ -371,7 +372,7 @@ User Story:
     
     def _get_functional_test_template(self) -> str:
         """Get template for functional test generation."""
-        return """Generate comprehensive functional test cases for the following requirements:
+        return """Generate exactly 5 functional test cases for the following requirements:
 
 Acceptance Criteria:
 {acceptance_criteria}
@@ -381,19 +382,43 @@ Acceptance Criteria:
 System Context:
 {system_context}
 
-Test Requirements:
-- Test Level: {test_level}
-- Output Format: {output_format}
-- Priority: {priority}
+OUTPUT FORMAT - Generate EXACTLY in this format:
 
-Please generate test cases that:
-1. Cover all acceptance criteria
-2. Include positive and negative scenarios
-3. Test boundary conditions
-4. Are specific and actionable
-5. Follow the specified output format: {output_format}
+TEST_CASE_1: [Test Case Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
 
-Generate at least 3-5 test cases with clear test steps, expected results, and test data requirements."""
+TEST_CASE_2: [Test Case Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+TEST_CASE_3: [Test Case Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+TEST_CASE_4: [Test Case Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+TEST_CASE_5: [Test Case Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+IMPORTANT:
+- Generate exactly 5 test cases
+- Use the exact format above
+- Make titles specific to the feature
+- Include realistic scenarios based on the acceptance criteria
+- Keep each test case concise and focused
+- Ensure test steps are detailed and executable
+- Follow the specified output format: {output_format}
+
+Generate 5-8 meaningful test cases that thoroughly test the described functionality."""
 
     def _get_edge_case_template(self) -> str:
         """Get template for edge case test generation."""

@@ -140,7 +140,7 @@ class UserStoryParser:
         return None
     
     def _parse_raw_format(self, story_text: str) -> Optional[ParsedUserStory]:
-        """Parse raw format user story."""
+        """Parse raw format user story with intelligent context extraction."""
         
         # Try standard user story format first
         parsed = self._parse_standard_format(story_text)
@@ -152,12 +152,196 @@ class UserStoryParser:
         if parsed:
             return parsed
         
+        # Try intelligent raw text parsing
+        parsed = self._parse_intelligent_raw_format(story_text)
+        if parsed:
+            return parsed
+        
         # Try to extract components from unstructured text
         parsed = self._parse_unstructured_format(story_text)
         if parsed:
             return parsed
         
         return None
+    
+    def _parse_intelligent_raw_format(self, text: str) -> Optional[ParsedUserStory]:
+        """Intelligently parse raw text to extract meaningful user story components."""
+        
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        if not lines:
+            return None
+        
+        # Extract key information from the text
+        context_info = self._extract_context_from_text(text)
+        
+        # Try to identify persona from various patterns
+        persona = self._extract_persona_from_context(context_info, lines)
+        
+        # Try to identify action/goal from various patterns
+        action = self._extract_action_from_context(context_info, lines)
+        
+        # Try to identify value/benefit from various patterns
+        value = self._extract_value_from_context(context_info, lines)
+        
+        # If we have meaningful components, create a parsed story
+        if persona and action and value:
+            confidence = self._calculate_confidence(persona, action, value) * 0.7
+            metadata = self._extract_metadata(text)
+            metadata['format'] = self.story_format
+            metadata['context_info'] = context_info
+            
+            return ParsedUserStory(
+                persona=persona,
+                action=action,
+                value=value,
+                original_text=text,
+                confidence=confidence,
+                metadata=metadata
+            )
+        
+        return None
+    
+    def _extract_context_from_text(self, text: str) -> Dict[str, Any]:
+        """Extract contextual information from raw text."""
+        context = {
+            'keywords': [],
+            'entities': [],
+            'actions': [],
+            'benefits': [],
+            'technical_terms': [],
+            'user_types': []
+        }
+        
+        text_lower = text.lower()
+        
+        # Extract technical terms
+        tech_patterns = [
+            r'\b(api|database|ui|ux|frontend|backend|microservice|container|kubernetes|docker|aws|azure|gcp)\b',
+            r'\b(rest|graphql|json|xml|http|https|ssl|tls|oauth|jwt)\b',
+            r'\b(react|angular|vue|node|python|java|go|rust|c#|php)\b',
+            r'\b(mysql|postgresql|mongodb|redis|elasticsearch|kafka|rabbitmq)\b'
+        ]
+        
+        for pattern in tech_patterns:
+            matches = re.findall(pattern, text_lower)
+            context['technical_terms'].extend(matches)
+        
+        # Extract user types
+        user_patterns = [
+            r'\b(admin|administrator|user|customer|client|guest|member|subscriber|visitor|developer|tester|manager|operator|analyst)\b'
+        ]
+        
+        for pattern in user_patterns:
+            matches = re.findall(pattern, text_lower)
+            context['user_types'].extend(matches)
+        
+        # Extract action verbs
+        action_patterns = [
+            r'\b(create|read|update|delete|view|display|show|hide|add|remove|edit|modify|configure|setup|install|deploy|monitor|analyze|report|alert|notify|send|receive|process|validate|verify|check|test|debug|log|track|trace|filter|sort|search|find|browse|navigate|click|select|submit|upload|download|export|import|backup|restore|migrate|sync|integrate|connect|disconnect|authenticate|authorize|login|logout|register|signup|signin|signout)\b'
+        ]
+        
+        for pattern in action_patterns:
+            matches = re.findall(pattern, text_lower)
+            context['actions'].extend(matches)
+        
+        # Extract benefit/value words
+        benefit_patterns = [
+            r'\b(improve|enhance|increase|decrease|reduce|optimize|streamline|simplify|accelerate|speed|fast|quick|efficient|effective|reliable|secure|safe|stable|robust|scalable|flexible|maintainable|readable|usable|accessible|intuitive|user-friendly|convenient|productive|profitable|cost-effective|time-saving|error-free|bug-free|seamless|smooth|consistent|accurate|precise|complete|comprehensive|thorough|detailed|clear|transparent|visible|auditable|traceable|monitorable|measurable|quantifiable)\b'
+        ]
+        
+        for pattern in benefit_patterns:
+            matches = re.findall(pattern, text_lower)
+            context['benefits'].extend(matches)
+        
+        # Extract entities (nouns that might be important)
+        entity_patterns = [
+            r'\b(system|platform|application|service|feature|function|component|module|interface|dashboard|report|alert|notification|email|message|data|information|record|file|document|user|account|profile|session|token|key|password|credential|permission|role|group|team|organization|company|department|project|task|issue|ticket|bug|defect|error|exception|log|event|metric|statistic|analytics|insight|trend|pattern|rule|policy|configuration|setting|parameter|option|preference|filter|criteria|condition|requirement|specification|standard|guideline|best practice|workflow|process|procedure|step|stage|phase|milestone|deadline|priority|status|state|mode|environment|context|scenario|use case|test case|validation|verification|testing|quality|performance|security|reliability|availability|scalability|maintainability|usability|accessibility)\b'
+        ]
+        
+        for pattern in entity_patterns:
+            matches = re.findall(pattern, text_lower)
+            context['entities'].extend(matches)
+        
+        return context
+    
+    def _extract_persona_from_context(self, context: Dict[str, Any], lines: List[str]) -> str:
+        """Extract persona from context and lines."""
+        
+        # Look for explicit user type mentions
+        if context['user_types']:
+            user_type = context['user_types'][0]
+            return f"As a {user_type}"
+        
+        # Look for patterns in lines
+        for line in lines:
+            line_lower = line.lower()
+            
+            # Check for "as a" patterns
+            if 'as a' in line_lower:
+                return line
+            
+            # Check for user type mentions
+            for user_type in ['admin', 'user', 'customer', 'developer', 'manager', 'operator']:
+                if user_type in line_lower:
+                    return f"As a {user_type}"
+        
+        # Default persona
+        return "As a user"
+    
+    def _extract_action_from_context(self, context: Dict[str, Any], lines: List[str]) -> str:
+        """Extract action from context and lines."""
+        
+        # Look for action verbs in context
+        if context['actions']:
+            action_verb = context['actions'][0]
+            return f"I want to {action_verb}"
+        
+        # Look for patterns in lines
+        for line in lines:
+            line_lower = line.lower()
+            
+            # Check for "want to" patterns
+            if 'want to' in line_lower or 'need to' in line_lower:
+                return line
+            
+            # Check for action verbs
+            for action in ['create', 'view', 'manage', 'configure', 'monitor', 'analyze', 'report']:
+                if action in line_lower:
+                    return f"I want to {action}"
+        
+        # Default action based on context
+        if context['technical_terms']:
+            return f"I want to use the {context['technical_terms'][0]} functionality"
+        
+        return "I want to perform the required actions"
+    
+    def _extract_value_from_context(self, context: Dict[str, Any], lines: List[str]) -> str:
+        """Extract value from context and lines."""
+        
+        # Look for benefit words in context
+        if context['benefits']:
+            benefit = context['benefits'][0]
+            return f"So that I can {benefit}"
+        
+        # Look for patterns in lines
+        for line in lines:
+            line_lower = line.lower()
+            
+            # Check for "so that" patterns
+            if 'so that' in line_lower or 'in order to' in line_lower:
+                return line
+            
+            # Check for benefit words
+            for benefit in ['improve', 'enhance', 'increase', 'reduce', 'optimize', 'streamline']:
+                if benefit in line_lower:
+                    return f"So that I can {benefit} the process"
+        
+        # Default value based on context
+        if context['entities']:
+            entity = context['entities'][0]
+            return f"So that I can effectively use the {entity}"
+        
+        return "So that I can achieve the desired functionality"
     
     def _parse_gherkin_patterns(self, text: str) -> Optional[ParsedUserStory]:
         """Parse Gherkin-specific patterns."""
