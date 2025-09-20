@@ -1,14 +1,15 @@
 # Test Case Generator Agent
 
-A robust yet simple, extensible Python framework for generating high-quality software test cases using LLMs. It supports multiple providers (OpenAI, Anthropic, Ollama, custom), multiple test generators (functional, edge, security), multiple output formats (Gherkin, code skeletons, human-readable), and provides both a CLI and a REST API via FastAPI.
+A robust yet simple, extensible Python framework for generating high-quality software test cases using LLMs. It supports multiple providers (OpenAI, Ollama, custom), multiple test generators (functional, security, API, UI, performance, accessibility), multiple output formats (Gherkin, code skeletons, human-readable), and provides both a CLI and a REST API via FastAPI.
 
 ## Features
-- Configurable LLM providers with YAML + environment variables
+- Configurable LLM providers (OpenAI, Ollama, custom) with environment variables
 - Retry, rate limiting, and async I/O for performance and reliability
 - Jira integration with real API or dummy data fallback
-- Pluggable generators: functional, edge case, security
+- Multiple test generators: functional, security, API, UI, performance, accessibility
 - Output formatters: Gherkin, code skeletons (Playwright, Pytest, Cypress, Selenium, JUnit), human-readable docs
 - CLI and FastAPI REST API
+- Dummy mode for testing without Jira access
 - Well-structured code for reusing the pattern to build more agents
 
 ## Project Structure
@@ -63,22 +64,19 @@ Optionally create a virtualenv first.
 ## Configuration
 Primary config lives in `config/llm_config.yaml`. Environment variables can override placeholders.
 
-### Local Mode vs Online Mode
+### Dummy Mode vs Real Jira Mode
 The system supports two modes:
 
-1. **Local Mode**: Uses synthetic data for development and testing without Jira access
-2. **Online Mode**: Uses real Jira API for production use
+1. **Dummy Mode**: Uses synthetic data for development and testing without Jira access
+2. **Real Jira Mode**: Uses real Jira API for production use
 
-To switch between modes, use the mode switcher:
+To use dummy mode, add the `--dummy` flag:
 ```bash
-# Switch to local mode (synthetic data + Ollama)
-python config/mode_switch.py local
+# Use dummy mode (no Jira API calls)
+python main.py generate-from-jira --ticket-id SJP-2 --dummy --output test_cases.feature
 
-# Switch to online mode (Jira API)
-python config/mode_switch.py online
-
-# Check current status
-python config/mode_switch.py status
+# Use real Jira mode (requires Jira credentials)
+python main.py generate-from-jira --ticket-id SJP-2 --output test_cases.feature
 ```
 
 Example `config/llm_config.yaml`:
@@ -209,13 +207,23 @@ python main.py generate \
 
 Generate from Jira (real or dummy):
 ```bash
+# With dummy data (recommended for testing)
 python main.py generate-from-jira \
-  --ticket-id PROJ-123 \
+  --ticket-id SJP-2 \
   --types functional --level integration \
-  --format human \
-  --provider openai
+  --format gherkin \
+  --provider ollama \
+  --dummy \
+  --output test_cases.feature
+
+# With real Jira (requires credentials)
+python main.py generate-from-jira \
+  --ticket-id SJP-2 \
+  --types functional --level integration \
+  --format gherkin \
+  --provider ollama \
+  --output test_cases.feature
 ```
-Use `--dummy` to avoid real Jira calls and use built-in sample data.
 
 Generate from synthetic features (local mode):
 ```bash
@@ -261,3 +269,5 @@ Linting is not enforced here, but the code follows Pydantic v2 and async httpx p
 - Ensure the appropriate provider API keys are set. If no valid provider is configured, generation will fail.
 - For Ollama, run an Ollama server locally and ensure the model exists.
 - Jira integration requires valid Jira Cloud credentials unless `--dummy` is used.
+- **Supported test types**: functional, security, api, ui, performance, accessibility
+- **Note**: Edge case generator exists but is not currently integrated due to model validation constraints
