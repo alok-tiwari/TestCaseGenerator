@@ -47,11 +47,12 @@ python main.py generate-from-jira --ticket-id SJP-2 --story-format raw --provide
 
 #### Test Types
 - `--types functional` (default) - Functional test cases
-- `--types security` - Security test cases  
+- `--types security` - Security test cases
 - `--types api` - API test cases
 - `--types ui` - UI test cases
 - `--types performance` - Performance test cases
 - `--types accessibility` - Accessibility test cases
+- `--types edge` - Edge case test scenarios (boundary conditions, error cases)
 
 #### Story Formats
 - `--story-format raw` (default) - Parse unstructured text
@@ -93,9 +94,14 @@ python main.py generate-from-jira --ticket-id SJP-2 --types functional --story-f
 python main.py generate-from-jira --ticket-id SJP-2 --types security --story-format raw --provider ollama --output security_tests.feature --mode online
 ```
 
+#### Generate Edge Case Tests (Local Mode)
+```bash
+python main.py generate-from-jira --ticket-id SJP-2 --types edge --story-format raw --provider ollama --output edge_tests.feature --mode local
+```
+
 #### Generate Multiple Test Types (Local Mode)
 ```bash
-python main.py generate-from-jira --ticket-id SJP-2 --types functional --types security --story-format raw --provider ollama --output all_tests.feature --mode local
+python main.py generate-from-jira --ticket-id SJP-2 --types functional --types security --types edge --story-format raw --provider ollama --output all_tests.feature --mode local
 ```
 
 #### Generate Playwright Code (Local Mode)
@@ -108,7 +114,7 @@ python main.py generate-from-jira --ticket-id SJP-2 --types functional --format 
 #### Common Issues
 1. **"Jira config not available"** - Use `--mode local` for testing
 2. **"LLM parsing failed"** - Check if Ollama is running locally
-3. **"Invalid test type"** - Use only supported test types (functional, security, api, ui, performance, accessibility)
+3. **"Invalid test type"** - Use only supported test types (functional, security, api, ui, performance, accessibility, edge)
 
 #### Check Ollama Status
 ```bash

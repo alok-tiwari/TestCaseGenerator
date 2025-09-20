@@ -41,7 +41,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
             enhanced_cases = []
             for test_case in test_cases:
                 enhanced_case = self._enhance_test_case(test_case, request)
-                enhanced_case.test_type = TestType.FUNCTIONAL  # Edge cases are still functional tests
+                enhanced_case.test_type = TestType.EDGE  # Edge cases are edge tests
                 enhanced_case.priority = self._determine_test_priority(request, "edge_case")
                 enhanced_case.tags = self._generate_tags(request, "edge_case")
                 
@@ -145,7 +145,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
             test_id=self._generate_test_id("EDGE-BND"),
             title=f"Boundary Value Edge Case Test: {context}",
             description=f"Edge case test scenarios for boundary values around {context}",
-            test_type=TestType.FUNCTIONAL,
+            test_type=TestType.EDGE,
             priority=self._determine_test_priority(request, "edge_case"),
             test_level=request.test_specification.test_level,
             steps=steps,
@@ -189,7 +189,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
                 test_id=self._generate_test_id("EDGE-STR"),
                 title=f"String Edge Case: {boundary['name']}",
                 description=f"Test system behavior with {boundary['description']}",
-                test_type=TestType.FUNCTIONAL,
+                test_type=TestType.EDGE,
                 priority=self._determine_test_priority(request, "edge_case"),
                 test_level=request.test_specification.test_level,
                 steps=steps,
@@ -255,7 +255,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
                 test_id=self._generate_test_id("EDGE-NEG"),
                 title=f"Negative Scenario: {parsed.when} without proper preconditions",
                 description=f"Negative test case for acceptance criteria {criteria_index}: {criteria}",
-                test_type=TestType.FUNCTIONAL,
+                test_type=TestType.EDGE,
                 priority=self._determine_test_priority(request, "edge_case"),
                 test_level=request.test_specification.test_level,
                 steps=steps,
@@ -336,7 +336,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
                 test_id=self._generate_test_id("EDGE-COM"),
                 title=scenario["title"],
                 description=scenario["description"],
-                test_type=TestType.FUNCTIONAL,
+                test_type=TestType.EDGE,
                 priority=self._determine_test_priority(request, "edge_case"),
                 test_level=request.test_specification.test_level,
                 steps=steps,
@@ -409,7 +409,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
                 test_id=self._generate_test_id("EDGE-ERR"),
                 title=scenario["title"],
                 description=scenario["description"],
-                test_type=TestType.FUNCTIONAL,
+                test_type=TestType.EDGE,
                 priority=self._determine_test_priority(request, "edge_case"),
                 test_level=request.test_specification.test_level,
                 steps=steps,
@@ -481,7 +481,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
                 test_id=self._generate_test_id("EDGE-DATA"),
                 title=scenario["title"],
                 description=scenario["description"],
-                test_type=TestType.FUNCTIONAL,
+                test_type=TestType.EDGE,
                 priority=self._determine_test_priority(request, "edge_case"),
                 test_level=request.test_specification.test_level,
                 steps=steps,
@@ -553,7 +553,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
                 test_id=self._generate_test_id("EDGE-PERF"),
                 title=scenario["title"],
                 description=scenario["description"],
-                test_type=TestType.FUNCTIONAL,
+                test_type=TestType.EDGE,
                 priority=self._determine_test_priority(request, "edge_case"),
                 test_level=request.test_specification.test_level,
                 steps=steps,
@@ -609,20 +609,98 @@ class EdgeCaseGenerator(BaseTestGenerator):
         
         test_cases = []
         
-        # Split response into test case sections
-        sections = response.split('\n\n')
-        
-        for section in sections:
-            if not section.strip():
-                continue
+        try:
+            logger.info("Starting edge case LLM response parsing")
             
-            try:
-                test_case = self._parse_edge_case_test(section, request)
-                if test_case:
+            # Parse the simple TEST_CASE_X format
+            test_case_pattern = r'TEST_CASE_(\d+):\s*(.+?)\n\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\n\nTEST_CASE_|\Z)'
+            matches = re.findall(test_case_pattern, response, re.DOTALL)
+            
+            logger.info(f"First pattern found {len(matches)} matches")
+            
+            # If no matches, try a simpler pattern (without double newline before GIVEN)
+            if not matches:
+                test_case_pattern = r'TEST_CASE_(\d+):\s*(.+?)\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\nTEST_CASE_|\Z)'
+                matches = re.findall(test_case_pattern, response, re.DOTALL)
+                logger.info(f"Second pattern found {len(matches)} matches")
+            
+            logger.info(f"Total matches found: {len(matches)}")
+            
+            for match in matches:
+                case_num, title, given, when, then = match
+                
+                # Clean up the title
+                title = title.strip()
+                
+                # Create test steps
+                steps = []
+                step_number = 1
+                
+                # Add GIVEN step
+                if given.strip():
+                    steps.append(self._create_test_step(
+                        step_number=step_number,
+                        action=given.strip(),
+                        expected_result="Precondition satisfied",
+                        notes="Given step"
+                    ))
+                    step_number += 1
+                
+                # Add WHEN step
+                if when.strip():
+                    steps.append(self._create_test_step(
+                        step_number=step_number,
+                        action=when.strip(),
+                        expected_result="Action completed",
+                        notes="When step"
+                    ))
+                    step_number += 1
+                
+                # Add THEN step
+                if then.strip():
+                    steps.append(self._create_test_step(
+                        step_number=step_number,
+                        action=then.strip(),
+                        expected_result="Expected result achieved",
+                        notes="Then step"
+                    ))
+                    step_number += 1
+                
+                if steps:
+                    test_case = TestCase(
+                        test_id=self._generate_test_id("EDGE"),
+                        title=title,
+                        description=f"Edge case test generated from LLM: {title}",
+                        test_type=TestType.EDGE,
+                        priority=TestPriority.MEDIUM,
+                        test_level=request.test_specification.test_level,
+                        steps=steps,
+                        tags=["llm-generated", "edge-case"],
+                        requirements=[f"Generated from JIRA ticket: {request.jira_ticket_id}"] if request.jira_ticket_id else [],
+                        jira_ticket_id=request.jira_ticket_id
+                    )
                     test_cases.append(test_case)
-            except Exception as e:
-                logger.warning(f"Failed to parse edge case test section: {e}")
-                continue
+            
+            # If no test cases found with new format, try old format
+            if not test_cases:
+                logger.info("No matches with new format, trying old format")
+                # Split response into test case sections
+                sections = response.split('\n\n')
+                
+                for section in sections:
+                    if not section.strip():
+                        continue
+                    
+                    try:
+                        test_case = self._parse_edge_case_test(section, request)
+                        if test_case:
+                            test_cases.append(test_case)
+                    except Exception as e:
+                        logger.warning(f"Failed to parse edge case test section: {e}")
+                        continue
+        
+        except Exception as e:
+            logger.error(f"Error in edge case LLM response parsing: {e}")
         
         return test_cases
     
@@ -674,7 +752,7 @@ class EdgeCaseGenerator(BaseTestGenerator):
             test_id=self._generate_test_id("EDGE"),
             title=title,
             description=description,
-            test_type=TestType.FUNCTIONAL,
+            test_type=TestType.EDGE,
             priority=self._determine_test_priority(request, "edge_case"),
             test_level=request.test_specification.test_level,
             steps=steps,

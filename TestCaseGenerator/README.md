@@ -6,7 +6,7 @@ A robust yet simple, extensible Python framework for generating high-quality sof
 - Configurable LLM providers (OpenAI, Ollama, custom) with environment variables
 - Retry, rate limiting, and async I/O for performance and reliability
 - Jira integration with real API or dummy data fallback
-- Multiple test generators: functional, security, API, UI, performance, accessibility
+- Multiple test generators: functional, security, API, UI, performance, accessibility, edge case
 - Output formatters: Gherkin, code skeletons (Playwright, Pytest, Cypress, Selenium, JUnit), human-readable docs
 - CLI and FastAPI REST API
 - Dummy mode for testing without Jira access
@@ -270,6 +270,6 @@ Linting is not enforced here, but the code follows Pydantic v2 and async httpx p
 - Ensure the appropriate provider API keys are set. If no valid provider is configured, generation will fail.
 - For Ollama, run an Ollama server locally and ensure the model exists.
 - Jira integration requires valid Jira Cloud credentials unless `--mode local` is used.
-- **Supported test types**: functional, security, api, ui, performance, accessibility
+- **Supported test types**: functional, security, api, ui, performance, accessibility, edge
 - **Local mode**: Reads from `local_user_story.txt` file (falls back to `dummy_user_story.txt` if not found)
-- **Note**: Edge case generator exists but is not currently integrated due to model validation constraints
+- **Edge case generator**: Now fully integrated and working, generates boundary condition and error scenario tests

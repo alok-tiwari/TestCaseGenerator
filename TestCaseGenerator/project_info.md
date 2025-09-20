@@ -6,7 +6,7 @@ This project automates the generation of test cases from Jira tickets, helping Q
 ## Key Features
 - **Jira Integration**: Fetches ticket details including user stories, acceptance criteria, and metadata
 - **AI-Powered Test Generation**: Uses language models (OpenAI, Ollama, custom) to create comprehensive test cases
-- **Multiple Test Types**: Supports functional, security, API, UI, performance, and accessibility tests
+- **Multiple Test Types**: Supports functional, security, API, UI, performance, accessibility, and edge case tests
 - **Multiple Output Formats**: Supports Gherkin (BDD), Playwright, Pytest, Cypress, Selenium, JUnit, and human-readable formats
 - **Dummy Mode**: Test without Jira access using synthetic data
 - **Configurable**: Can be configured for different projects and test types
@@ -21,6 +21,7 @@ This project automates the generation of test cases from Jira tickets, helping Q
    - UI test cases
    - Performance test cases
    - Accessibility test cases
+   - Edge case test scenarios
 4. **Formatting**: Outputs tests in desired format (Gherkin, code skeletons, human-readable)
 5. **Storage**: Saves generated tests to files
 

@@ -117,7 +117,7 @@ class TestSpecification(BaseModel):
     @field_validator("test_types")
     def validate_test_types(cls, v):
         """Validate test types."""
-        valid_types = ["functional", "api", "ui", "performance", "security", "accessibility"]
+        valid_types = ["functional", "api", "ui", "performance", "security", "accessibility", "edge"]
         for test_type in v:
             if test_type not in valid_types:
                 raise ValueError(f"Invalid test type: {test_type}. Must be one of {valid_types}")

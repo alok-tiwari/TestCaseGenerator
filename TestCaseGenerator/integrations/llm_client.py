@@ -422,7 +422,7 @@ Generate 5-8 meaningful test cases that thoroughly test the described functional
 
     def _get_edge_case_template(self) -> str:
         """Get template for edge case test generation."""
-        return """Generate edge case test scenarios for the following requirements:
+        return """Generate exactly 5 edge case test scenarios for the following requirements:
 
 Acceptance Criteria:
 {acceptance_criteria}
@@ -440,7 +440,44 @@ Focus on:
 5. Security edge cases
 6. Data edge cases
 
-Generate test cases that explore the limits and failure modes of the system."""
+OUTPUT FORMAT - Generate EXACTLY in this format:
+
+TEST_CASE_1: [Edge Case Test Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+TEST_CASE_2: [Edge Case Test Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+TEST_CASE_3: [Edge Case Test Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+TEST_CASE_4: [Edge Case Test Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+TEST_CASE_5: [Edge Case Test Title]
+GIVEN: [Precondition]
+WHEN: [Action]
+THEN: [Expected Result]
+
+IMPORTANT:
+- Generate exactly 5 edge case test scenarios
+- Use the exact format above
+- Focus on boundary conditions, invalid inputs, and error scenarios
+- Make titles specific to edge cases and failure modes
+- Include realistic edge case scenarios based on the acceptance criteria
+- Keep each test case concise and focused
+- Ensure test steps are detailed and executable
+- Follow the specified output format: {output_format}
+
+Generate 5-8 meaningful edge case test scenarios that explore the limits and failure modes of the system."""
 
     def _get_security_test_template(self) -> str:
         """Get template for security test generation."""

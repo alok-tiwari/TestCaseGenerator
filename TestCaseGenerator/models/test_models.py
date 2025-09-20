@@ -36,6 +36,7 @@ class TestType(str, Enum):
     INTEGRATION = "integration"
     UNIT = "unit"
     E2E = "e2e"
+    EDGE = "edge"
 
 
 class TestStep(BaseModel):
