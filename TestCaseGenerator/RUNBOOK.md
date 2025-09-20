@@ -60,6 +60,7 @@ python main.py generate-from-jira --ticket-id SJP-2 --story-format raw --provide
 
 #### Output Formats
 - `--format gherkin` (default) - Gherkin/BDD format
+- `--format step-driven` - Step-driven test format with detailed test data
 - `--format playwright` - Playwright code skeleton
 - `--format pytest` - Pytest code skeleton
 - `--format cypress` - Cypress code skeleton
@@ -102,6 +103,11 @@ python main.py generate-from-jira --ticket-id SJP-2 --types edge --story-format 
 #### Generate Multiple Test Types (Local Mode)
 ```bash
 python main.py generate-from-jira --ticket-id SJP-2 --types functional --types security --types edge --story-format raw --provider ollama --output all_tests.feature --mode local
+```
+
+#### Generate Step-Driven Tests (Local Mode)
+```bash
+python main.py generate-from-jira --ticket-id SJP-2 --types functional --format step-driven --provider ollama --output test_cases.txt --mode local
 ```
 
 #### Generate Playwright Code (Local Mode)

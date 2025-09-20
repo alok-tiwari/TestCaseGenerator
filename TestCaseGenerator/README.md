@@ -7,7 +7,7 @@ A robust yet simple, extensible Python framework for generating high-quality sof
 - Retry, rate limiting, and async I/O for performance and reliability
 - Jira integration with real API or dummy data fallback
 - Multiple test generators: functional, security, API, UI, performance, accessibility, edge case
-- Output formatters: Gherkin, code skeletons (Playwright, Pytest, Cypress, Selenium, JUnit), human-readable docs
+- Output formatters: Gherkin, step-driven, code skeletons (Playwright, Pytest, Cypress, Selenium, JUnit), human-readable docs
 - CLI and FastAPI REST API
 - Dummy mode for testing without Jira access
 - Well-structured code for reusing the pattern to build more agents
@@ -215,6 +215,15 @@ python main.py generate-from-jira \
   --provider ollama \
   --mode local \
   --output test_cases.feature
+
+# With step-driven format (local mode)
+python main.py generate-from-jira \
+  --ticket-id SJP-2 \
+  --types functional --level integration \
+  --format step-driven \
+  --provider ollama \
+  --mode local \
+  --output test_cases.txt
 
 # With online mode (requires credentials)
 python main.py generate-from-jira \

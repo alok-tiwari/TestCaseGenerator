@@ -1,3 +1,21 @@
-As a facility manager
-I want to monitor equipment performance in real-time
-So that I can prevent equipment failures and optimize energy usage
+Generate functional test cases for the following requirement:
+
+Acceptance Criteria:  
+- Add Gain and Offset integer fields in ION Input Points.  
+- Final Value = (Input × Gain) + Offset.  
+- Handle edge cases like negative values, NaN, extreme float values, and rounding.
+
+Use the following test data table as reference:  
+| Test Case | Gain Value | Offset Value | Expected Behavior |
+|-----------|------------|--------------|------------------|
+| 1         | 10         | 5            | Accept, output=105 |
+| 2         | -10        | 5            | Accept, output=-95 |
+| 3         | NaN        | 5            | Error             |
+| 4         | 1.797e308  | 5            | Error             |
+
+Output Format:  
+- Scenario Name  
+- Precondition  
+- Steps  
+- Test Data  
+- Expected Result  

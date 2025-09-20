@@ -29,6 +29,7 @@ from generators.security_test_generator import SecurityTestGenerator
 from formatters.gherkin_formatter import GherkinFormatter
 from formatters.code_skeleton_formatter import CodeSkeletonFormatter
 from formatters.human_readable_formatter import HumanReadableFormatter
+from formatters.step_driven_formatter import StepDrivenFormatter
 
 
 logging.basicConfig(level=logging.INFO)
@@ -77,6 +78,8 @@ async def _build_generators(llm_client: LLMClient, spec: TestSpecification):
 def _get_formatter(output_format: str):
     if output_format == "gherkin":
         return GherkinFormatter()
+    if output_format == "step-driven":
+        return StepDrivenFormatter()
     if output_format in {"playwright", "pytest", "cypress", "selenium", "junit"}:
         return CodeSkeletonFormatter()
     return HumanReadableFormatter()
@@ -94,6 +97,8 @@ async def _generate_internal(req: TestCaseRequest, provider: Optional[str] = Non
         formatter = _get_formatter(req.test_specification.output_format)
         formatted_output = None
         if isinstance(formatter, GherkinFormatter):
+            formatted_output = formatter.format_test_cases(all_cases, req)
+        elif isinstance(formatter, StepDrivenFormatter):
             formatted_output = formatter.format_test_cases(all_cases, req)
         elif isinstance(formatter, CodeSkeletonFormatter):
             framework = req.test_specification.output_format
@@ -155,7 +160,7 @@ def cli():
 @click.option("--role", multiple=True, default=[])
 @click.option("--types", multiple=True, default=["functional"], help="Test types e.g. functional,security")
 @click.option("--level", default="unit", type=click.Choice(["unit", "integration", "e2e", "system"]))
-@click.option("--format", "out_format", default="gherkin", type=click.Choice(["gherkin", "playwright", "pytest", "cypress", "human"]))
+@click.option("--format", "out_format", default="gherkin", type=click.Choice(["gherkin", "playwright", "pytest", "cypress", "human", "step-driven"]))
 @click.option("--priority", default="medium", type=click.Choice(["low", "medium", "high", "critical"]))
 @click.option("--jira", "jira_id", default=None, help="Jira ticket id")
 @click.option("--provider", default=None, help="LLM provider key from config/llm_config.yaml")
@@ -192,7 +197,7 @@ def generate(criteria_type, criteria, persona, action, value, tech, data, constr
 
 @cli.command()
 @click.option("--ticket-id", required=True)
-@click.option("--format", "out_format", default="gherkin", type=click.Choice(["gherkin", "playwright", "pytest", "cypress", "human"]))
+@click.option("--format", "out_format", default="gherkin", type=click.Choice(["gherkin", "playwright", "pytest", "cypress", "human", "step-driven"]))
 @click.option("--types", multiple=True, default=["functional"], help="Test types e.g. functional,security")
 @click.option("--level", default="integration", type=click.Choice(["unit", "integration", "e2e", "system"]))
 @click.option("--priority", default="medium", type=click.Choice(["low", "medium", "high", "critical"]))
@@ -278,7 +283,7 @@ def serve(host, port, reload):
 
 @cli.command()
 @click.argument("feature_id")
-@click.option("--format", "out_format", default="gherkin", type=click.Choice(["gherkin", "playwright", "pytest", "cypress", "human"]))
+@click.option("--format", "out_format", default="gherkin", type=click.Choice(["gherkin", "playwright", "pytest", "cypress", "human", "step-driven"]))
 @click.option("--types", multiple=True, default=["functional"], help="Test types e.g. functional,security")
 @click.option("--level", default="integration", type=click.Choice(["unit", "integration", "e2e", "system"]))
 @click.option("--priority", default="medium", type=click.Choice(["low", "medium", "high", "critical"]))

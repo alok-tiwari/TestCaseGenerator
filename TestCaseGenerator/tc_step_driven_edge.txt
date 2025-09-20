@@ -1,0 +1,280 @@
+Test Case ID: EDGE-STR-20250919-001
+Test Case Name: String Edge Case: Empty String
+Steps:
+	1.	Input string: Empty String - System handles Zero length string appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles Zero length string appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-002
+Test Case Name: String Edge Case: Single Character
+Steps:
+	1.	Input string: Single Character - System handles One character string appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles One character string appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-003
+Test Case Name: String Edge Case: Short String
+Steps:
+	1.	Input string: Short String - System handles Short string appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles Short string appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-004
+Test Case Name: String Edge Case: Long String
+Steps:
+	1.	Input string: Long String - System handles Very long string appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles Very long string appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-005
+Test Case Name: String Edge Case: Special Characters
+Steps:
+	1.	Input string: Special Characters - System handles Special characters appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles Special characters appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-006
+Test Case Name: String Edge Case: Unicode Characters
+Steps:
+	1.	Input string: Unicode Characters - System handles Unicode characters appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles Unicode characters appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-007
+Test Case Name: String Edge Case: HTML Tags
+Steps:
+	1.	Input string: HTML Tags - System handles HTML/script tags appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles HTML/script tags appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-008
+Test Case Name: String Edge Case: SQL Injection
+Steps:
+	1.	Input string: SQL Injection - System handles SQL injection attempt appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles SQL injection attempt appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-009
+Test Case Name: String Edge Case: XSS Payload
+Steps:
+	1.	Input string: XSS Payload - System handles XSS payload appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles XSS payload appropriately
+Actual Result:
+
+Test Case ID: EDGE-STR-20250919-010
+Test Case Name: String Edge Case: Null Characters
+Steps:
+	1.	Input string: Null Characters - System handles String with null characters appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles String with null characters appropriately
+Actual Result:
+
+Test Case ID: EDGE-NEG-20250919-011
+Test Case Name: Negative Scenario: they perform the specified action, without proper preconditions
+Steps:
+	1.	Ensure system is NOT in state: a user from local_user_story.txt, - System is in a different state
+	2.	Attempt to they perform the specified action, - System rejects the action appropriately
+	3.	Verify error handling - System provides appropriate error message
+Test Data: Input values as specified in steps
+Expected Result: System provides appropriate error message
+Actual Result:
+
+Test Case ID: EDGE-NEG-20250919-012
+Test Case Name: Negative Scenario: the user interacts with the system, without proper preconditions
+Steps:
+	1.	Ensure system is NOT in state: the system is in a known state, - System is in a different state
+	2.	Attempt to the user interacts with the system, - System rejects the action appropriately
+	3.	Verify error handling - System provides appropriate error message
+Test Data: Input values as specified in steps
+Expected Result: System provides appropriate error message
+Actual Result:
+
+Test Case ID: EDGE-NEG-20250919-013
+Test Case Name: Negative Scenario: they access the feature, without proper preconditions
+Steps:
+	1.	Ensure system is NOT in state: the user has valid permissions, - System is in a different state
+	2.	Attempt to they access the feature, - System rejects the action appropriately
+	3.	Verify error handling - System provides appropriate error message
+Test Data: Input values as specified in steps
+Expected Result: System provides appropriate error message
+Actual Result:
+
+Test Case ID: EDGE-COM-20250919-014
+Test Case Name: Invalid Authentication
+Steps:
+	1.	Enter invalid username/password - System handles the scenario appropriately
+	2.	Submit login form - System handles the scenario appropriately
+	3.	Verify appropriate error message - System handles the scenario appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles the scenario appropriately
+Actual Result:
+
+Test Case ID: EDGE-COM-20250919-015
+Test Case Name: Unauthorized Access
+Steps:
+	1.	Login with limited user role - System handles the scenario appropriately
+	2.	Attempt to access restricted functionality - System handles the scenario appropriately
+	3.	Verify access is denied - System handles the scenario appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles the scenario appropriately
+Actual Result:
+
+Test Case ID: EDGE-COM-20250919-016
+Test Case Name: Invalid Input Data
+Steps:
+	1.	Enter invalid data in form fields - System handles the scenario appropriately
+	2.	Submit the form - System handles the scenario appropriately
+	3.	Verify validation errors are displayed - System handles the scenario appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles the scenario appropriately
+Actual Result:
+
+Test Case ID: EDGE-COM-20250919-017
+Test Case Name: Network Failure
+Steps:
+	1.	Simulate network disconnection - System handles the scenario appropriately
+	2.	Attempt to perform operations - System handles the scenario appropriately
+	3.	Verify graceful degradation - System handles the scenario appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles the scenario appropriately
+Actual Result:
+
+Test Case ID: EDGE-COM-20250919-018
+Test Case Name: Concurrent Access
+Steps:
+	1.	Simulate multiple users accessing same resource - System handles the scenario appropriately
+	2.	Perform conflicting operations - System handles the scenario appropriately
+	3.	Verify data consistency is maintained - System handles the scenario appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles the scenario appropriately
+Actual Result:
+
+Test Case ID: EDGE-ERR-20250919-019
+Test Case Name: Database Connection Failure
+Steps:
+	1.	Simulate database connection failure - System handles errors gracefully
+	2.	Attempt to perform database operations - System handles errors gracefully
+	3.	Verify appropriate error handling - System handles errors gracefully
+Test Data: Input values as specified in steps
+Expected Result: System handles errors gracefully
+Actual Result:
+
+Test Case ID: EDGE-ERR-20250919-020
+Test Case Name: File Upload Errors
+Steps:
+	1.	Attempt to upload invalid file types - System handles errors gracefully
+	2.	Attempt to upload oversized files - System handles errors gracefully
+	3.	Attempt to upload corrupted files - System handles errors gracefully
+	4.	Verify appropriate error messages - System handles errors gracefully
+Test Data: Input values as specified in steps
+Expected Result: System handles errors gracefully
+Actual Result:
+
+Test Case ID: EDGE-ERR-20250919-021
+Test Case Name: API Rate Limiting
+Steps:
+	1.	Exceed API rate limits - System handles errors gracefully
+	2.	Verify rate limiting is enforced - System handles errors gracefully
+	3.	Verify appropriate error responses - System handles errors gracefully
+Test Data: Input values as specified in steps
+Expected Result: System handles errors gracefully
+Actual Result:
+
+Test Case ID: EDGE-ERR-20250919-022
+Test Case Name: Session Timeout
+Steps:
+	1.	Wait for session to expire - System handles errors gracefully
+	2.	Attempt to perform operations - System handles errors gracefully
+	3.	Verify user is redirected to login - System handles errors gracefully
+Test Data: Input values as specified in steps
+Expected Result: System handles errors gracefully
+Actual Result:
+
+Test Case ID: EDGE-DATA-20250919-023
+Test Case Name: Empty Data Sets
+Steps:
+	1.	Create empty data set - System handles data edge cases appropriately
+	2.	Perform operations on empty data - System handles data edge cases appropriately
+	3.	Verify appropriate handling - System handles data edge cases appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles data edge cases appropriately
+Actual Result:
+
+Test Case ID: EDGE-DATA-20250919-024
+Test Case Name: Large Data Sets
+Steps:
+	1.	Create large data set - System handles data edge cases appropriately
+	2.	Perform operations on large data - System handles data edge cases appropriately
+	3.	Verify performance and memory usage - System handles data edge cases appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles data edge cases appropriately
+Actual Result:
+
+Test Case ID: EDGE-DATA-20250919-025
+Test Case Name: Special Characters in Data
+Steps:
+	1.	Include special characters in data - System handles data edge cases appropriately
+	2.	Perform operations on data - System handles data edge cases appropriately
+	3.	Verify data integrity is maintained - System handles data edge cases appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles data edge cases appropriately
+Actual Result:
+
+Test Case ID: EDGE-DATA-20250919-026
+Test Case Name: Data Type Mismatches
+Steps:
+	1.	Provide wrong data type for fields - System handles data edge cases appropriately
+	2.	Attempt to process data - System handles data edge cases appropriately
+	3.	Verify appropriate error handling - System handles data edge cases appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles data edge cases appropriately
+Actual Result:
+
+Test Case ID: EDGE-PERF-20250919-027
+Test Case Name: High Load Conditions
+Steps:
+	1.	Simulate high user load - System handles performance edge cases appropriately
+	2.	Monitor system performance - System handles performance edge cases appropriately
+	3.	Verify system remains responsive - System handles performance edge cases appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles performance edge cases appropriately
+Actual Result:
+
+Test Case ID: EDGE-PERF-20250919-028
+Test Case Name: Memory Pressure
+Steps:
+	1.	Simulate low memory conditions - System handles performance edge cases appropriately
+	2.	Perform memory-intensive operations - System handles performance edge cases appropriately
+	3.	Verify graceful degradation - System handles performance edge cases appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles performance edge cases appropriately
+Actual Result:
+
+Test Case ID: EDGE-PERF-20250919-029
+Test Case Name: Slow Network Conditions
+Steps:
+	1.	Simulate slow network conditions - System handles performance edge cases appropriately
+	2.	Perform network operations - System handles performance edge cases appropriately
+	3.	Verify timeout handling - System handles performance edge cases appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles performance edge cases appropriately
+Actual Result:
+
+Test Case ID: EDGE-PERF-20250919-030
+Test Case Name: Resource Exhaustion
+Steps:
+	1.	Exhaust system resources - System handles performance edge cases appropriately
+	2.	Attempt to perform operations - System handles performance edge cases appropriately
+	3.	Verify appropriate error handling - System handles performance edge cases appropriately
+Test Data: Input values as specified in steps
+Expected Result: System handles performance edge cases appropriately
+Actual Result:

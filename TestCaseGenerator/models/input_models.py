@@ -105,7 +105,7 @@ class TestSpecification(BaseModel):
     )
     output_format: str = Field(
         default="gherkin",
-        pattern="^(gherkin|playwright|pytest|cypress|human)$",  # Changed from regex to pattern
+        pattern="^(gherkin|playwright|pytest|cypress|human|step-driven)$",  # Changed from regex to pattern
         description="Desired output format for test cases"
     )
     priority: str = Field(
