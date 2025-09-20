@@ -23,10 +23,13 @@ class LLMProviderConfig(BaseModel):
 class AppConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='allow')
     
+    # Mode settings
+    MODE: str = 'online'  # 'online' or 'local'
+    
     # Jira settings
-    JIRA_BASE_URL: str
-    JIRA_USERNAME: str
-    JIRA_API_TOKEN: str
+    JIRA_BASE_URL: str = ''
+    JIRA_USERNAME: str = ''
+    JIRA_API_TOKEN: str = ''
     JIRA_USER_STORY_FORMAT: str = 'raw'  # 'raw' or 'gherkin'
     JIRA_EXTRACT_CONTEXT: bool = True  # Extract system context from JIRA tickets
     JIRA_CONTEXT_DETAIL_LEVEL: str = 'medium'  # 'low', 'medium', 'high'
@@ -37,6 +40,18 @@ class AppConfig(BaseSettings):
     CUSTOM_ENDPOINT: str = ''
 
     def get_jira_config(self) -> JiraConfig:
+        # For local mode, use dummy values
+        if self.MODE == 'local':
+            return JiraConfig(
+                base_url="https://dummy.atlassian.net",
+                username="dummy@example.com",
+                api_token="dummy-token",
+                user_story_format=self.JIRA_USER_STORY_FORMAT,
+                extract_context=self.JIRA_EXTRACT_CONTEXT,
+                context_detail_level=self.JIRA_CONTEXT_DETAIL_LEVEL
+            )
+        
+        # For online mode, use real Jira credentials
         return JiraConfig(
             base_url=self.JIRA_BASE_URL,
             username=self.JIRA_USERNAME,

@@ -64,19 +64,19 @@ Optionally create a virtualenv first.
 ## Configuration
 Primary config lives in `config/llm_config.yaml`. Environment variables can override placeholders.
 
-### Dummy Mode vs Real Jira Mode
+### Local Mode vs Online Mode
 The system supports two modes:
 
-1. **Dummy Mode**: Uses synthetic data for development and testing without Jira access
-2. **Real Jira Mode**: Uses real Jira API for production use
+1. **Local Mode**: Reads from local_user_story.txt file for development and testing without Jira access
+2. **Online Mode**: Uses real Jira API for production use
 
-To use dummy mode, add the `--dummy` flag:
+To use local mode, add the `--mode local` flag:
 ```bash
-# Use dummy mode (no Jira API calls)
-python main.py generate-from-jira --ticket-id SJP-2 --dummy --output test_cases.feature
+# Use local mode (reads from local_user_story.txt)
+python main.py generate-from-jira --ticket-id SJP-2 --mode local --output test_cases.feature
 
-# Use real Jira mode (requires Jira credentials)
-python main.py generate-from-jira --ticket-id SJP-2 --output test_cases.feature
+# Use online mode (requires Jira credentials)
+python main.py generate-from-jira --ticket-id SJP-2 --mode online --output test_cases.feature
 ```
 
 Example `config/llm_config.yaml`:
@@ -205,23 +205,24 @@ python main.py generate \
   --provider openai
 ```
 
-Generate from Jira (real or dummy):
+Generate from Jira (local or online):
 ```bash
-# With dummy data (recommended for testing)
+# With local mode (reads from local_user_story.txt)
 python main.py generate-from-jira \
   --ticket-id SJP-2 \
   --types functional --level integration \
   --format gherkin \
   --provider ollama \
-  --dummy \
+  --mode local \
   --output test_cases.feature
 
-# With real Jira (requires credentials)
+# With online mode (requires credentials)
 python main.py generate-from-jira \
   --ticket-id SJP-2 \
   --types functional --level integration \
   --format gherkin \
   --provider ollama \
+  --mode online \
   --output test_cases.feature
 ```
 
@@ -268,6 +269,7 @@ Linting is not enforced here, but the code follows Pydantic v2 and async httpx p
 ## Notes
 - Ensure the appropriate provider API keys are set. If no valid provider is configured, generation will fail.
 - For Ollama, run an Ollama server locally and ensure the model exists.
-- Jira integration requires valid Jira Cloud credentials unless `--dummy` is used.
+- Jira integration requires valid Jira Cloud credentials unless `--mode local` is used.
 - **Supported test types**: functional, security, api, ui, performance, accessibility
+- **Local mode**: Reads from `local_user_story.txt` file (falls back to `dummy_user_story.txt` if not found)
 - **Note**: Edge case generator exists but is not currently integrated due to model validation constraints

@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 import random
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
@@ -156,7 +157,18 @@ class JiraClient:
         return await self.fetch_tickets_by_jql(jql)
     
     def generate_dummy_ticket(self, ticket_id: str) -> JiraTicket:
-        """Generate dummy Jira ticket data for testing."""
+        """Generate dummy Jira ticket data for testing using local_user_story.txt."""
+        
+        # Try to read from local_user_story.txt, fallback to dummy_user_story.txt
+        user_story_file = "local_user_story.txt"
+        if not os.path.exists(user_story_file):
+            user_story_file = "dummy_user_story.txt"
+        
+        try:
+            with open(user_story_file, 'r') as f:
+                user_story_content = f.read().strip()
+        except FileNotFoundError:
+            user_story_content = "As a user\nI want to perform an action\nSo that I can achieve a goal"
         
         # Generate random data
         priorities = ["Low", "Medium", "High", "Critical"]
@@ -167,8 +179,8 @@ class JiraClient:
         issue = JiraIssue(
             issue_key=ticket_id,
             issue_id=str(random.randint(10000, 99999)),
-            summary=f"Dummy ticket for {ticket_id}",
-            description="This is a dummy ticket generated for testing purposes. It contains sample data to demonstrate the test case generator functionality.",
+            summary=f"Local ticket for {ticket_id}",
+            description=f"This is a local ticket generated from {user_story_file}. It contains user story data for testing the test case generator functionality.\n\nUser Story:\n{user_story_content}",
             issue_type=random.choice(issue_types),
             status={"name": random.choice(statuses)},
             priority=random.choice(priorities),
@@ -179,24 +191,21 @@ class JiraClient:
             fields={}
         )
         
-        # Generate dummy acceptance criteria
+        # Generate acceptance criteria based on user story
         acceptance_criteria = [
-            "Given a DUMMY user is logged into the system, When they navigate to the dashboard, Then they should see their personalized content",
-            "Given a DUMMY user has completed a form, When they click the submit button, Then the data should be saved and a confirmation message displayed",
-            "Given a DUMMY user is viewing a list of items, When they apply a filter, Then only matching items should be displayed"
+            f"Given a user from {user_story_file}, When they perform the specified action, Then they should achieve the expected goal",
+            "Given the system is in a known state, When the user interacts with the system, Then the system should respond appropriately",
+            "Given the user has valid permissions, When they access the feature, Then they should see the expected functionality"
         ]
         
-        # Generate dummy user story
-        user_story = "As a registered DUMMY user\nI want to access my personalized dashboard\nSo that I can view relevant information quickly"
-        
-        # Generate dummy labels and components
-        labels = ["frontend", "user-experience", "dashboard"]
-        components = ["web-interface", "user-management"]
+        # Generate labels and components
+        labels = ["local-test", "user-story", "test-generation"]
+        components = ["test-framework", "user-interface"]
         
         return JiraTicket(
             issue=issue,
             acceptance_criteria=acceptance_criteria,
-            user_story=user_story,
+            user_story=user_story_content,
             labels=labels,
             components=components,
             epic_link=f"EPIC-{random.randint(100, 999)}",

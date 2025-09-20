@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
-from config.settings import config, get_llm_config, get_jira_config
+from config.settings import config, get_llm_config, get_jira_config, AppConfig
 from integrations.llm_client import LLMClient
 from integrations.jira_client import JiraClient
 
@@ -197,24 +197,27 @@ def generate(criteria_type, criteria, persona, action, value, tech, data, constr
 @click.option("--level", default="integration", type=click.Choice(["unit", "integration", "e2e", "system"]))
 @click.option("--priority", default="medium", type=click.Choice(["low", "medium", "high", "critical"]))
 @click.option("--provider", default=None)
-@click.option("--dummy", is_flag=True, help="Use dummy Jira data instead of real API (recommended for testing)")
+@click.option("--mode", default="online", type=click.Choice(["online", "local"]), help="Mode: 'online' for real Jira API, 'local' for local file")
 @click.option("--output", "output_path", default=None)
 @click.option("--story-format", "story_format", default="raw", type=click.Choice(["raw", "gherkin"]), help="JIRA user story format: 'raw' for unstructured text or 'gherkin' for Gherkin format")
 @click.option("--extract-context/--no-extract-context", default=True, help="Extract system context from JIRA ticket")
 @click.option("--context-detail", "context_detail", default="medium", type=click.Choice(["low", "medium", "high"]), help="Level of detail for context extraction")
-def generate_from_jira(ticket_id, out_format, types, level, priority, provider, dummy, output_path, story_format, extract_context, context_detail):
+def generate_from_jira(ticket_id, out_format, types, level, priority, provider, mode, output_path, story_format, extract_context, context_detail):
     """Generate test cases by pulling data from Jira."""
-    jira_conf = get_jira_config()
-    if not dummy and not jira_conf:
-        raise click.ClickException("Jira config not available. Provide JIRA_* env vars or use --dummy.")
+    # Set the mode in the config
+    config = AppConfig()
+    config.MODE = mode
+    jira_conf = config.get_jira_config()
+    
+    if mode == "online" and not jira_conf.base_url:
+        raise click.ClickException("Jira config not available. Provide JIRA_* env vars or use --mode local.")
 
     async def _run():
-        if dummy:
+        if mode == "local":
             jira_client = None
             # Create a dummy config with the specified story format
-            if jira_conf:
-                jira_conf.user_story_format = story_format
-            ticket = JiraClient(jira_conf).generate_dummy_ticket(ticket_id) if jira_conf else JiraClient.__new__(JiraClient).generate_dummy_ticket(ticket_id)  # type: ignore
+            jira_conf.user_story_format = story_format
+            ticket = JiraClient(jira_conf).generate_dummy_ticket(ticket_id)
         else:
             # Update the config with the specified parameters
             jira_conf.user_story_format = story_format
@@ -233,7 +236,7 @@ def generate_from_jira(ticket_id, out_format, types, level, priority, provider, 
             
             # Extract system context from JIRA ticket
             system_context = None
-            if not dummy and jira_client and jira_conf.extract_context:
+            if mode == "online" and jira_client and jira_conf.extract_context:
                 context_data = jira_client._extract_system_context(ticket.issue.fields)
                 if context_data:
                     system_context = SystemContext(
@@ -255,7 +258,7 @@ def generate_from_jira(ticket_id, out_format, types, level, priority, provider, 
                 else:
                     click.echo(formatted)
         finally:
-            if not dummy and jira_client:
+            if mode == "online" and jira_client:
                 await jira_client.close()
 
     asyncio.run(_run())

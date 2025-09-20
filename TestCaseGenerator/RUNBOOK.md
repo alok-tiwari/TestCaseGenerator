@@ -31,16 +31,16 @@ CUSTOM_API_KEY=your-custom-api-key
 
 ## 2. Running the Application
 
-### 2.1 Basic Usage (Recommended)
-Generate test cases from Jira ticket with dummy data (no API calls):
+### 2.1 Local Mode (Recommended for Testing)
+Generate test cases from local user story file (no API calls):
 ```bash
-python main.py generate-from-jira --ticket-id SJP-2 --story-format raw --provider ollama --output test_cases.feature --dummy
+python main.py generate-from-jira --ticket-id SJP-2 --story-format raw --provider ollama --output test_cases.feature --mode local
 ```
 
-### 2.2 Real Jira Integration
+### 2.2 Online Mode (Real Jira Integration)
 Generate test cases from real Jira ticket:
 ```bash
-python main.py generate-from-jira --ticket-id SJP-2 --story-format raw --provider ollama --output test_cases.feature
+python main.py generate-from-jira --ticket-id SJP-2 --story-format raw --provider ollama --output test_cases.feature --mode online
 ```
 
 ### 2.3 Available Options
@@ -77,32 +77,36 @@ python main.py generate-from-jira --ticket-id SJP-2 --story-format raw --provide
 - `--provider openai` - OpenAI API
 - `--provider custom` - Custom LLM endpoint
 
+#### Modes
+- `--mode local` - Read from local_user_story.txt file (no Jira API calls)
+- `--mode online` (default) - Use real Jira API
+
 ### 2.4 Example Commands
 
-#### Generate Functional Tests
+#### Generate Functional Tests (Local Mode)
 ```bash
-python main.py generate-from-jira --ticket-id SJP-2 --types functional --story-format raw --provider ollama --output functional_tests.feature --dummy
+python main.py generate-from-jira --ticket-id SJP-2 --types functional --story-format raw --provider ollama --output functional_tests.feature --mode local
 ```
 
-#### Generate Security Tests
+#### Generate Security Tests (Online Mode)
 ```bash
-python main.py generate-from-jira --ticket-id SJP-2 --types security --story-format raw --provider ollama --output security_tests.feature --dummy
+python main.py generate-from-jira --ticket-id SJP-2 --types security --story-format raw --provider ollama --output security_tests.feature --mode online
 ```
 
-#### Generate Multiple Test Types
+#### Generate Multiple Test Types (Local Mode)
 ```bash
-python main.py generate-from-jira --ticket-id SJP-2 --types functional --types security --story-format raw --provider ollama --output all_tests.feature --dummy
+python main.py generate-from-jira --ticket-id SJP-2 --types functional --types security --story-format raw --provider ollama --output all_tests.feature --mode local
 ```
 
-#### Generate Playwright Code
+#### Generate Playwright Code (Local Mode)
 ```bash
-python main.py generate-from-jira --ticket-id SJP-2 --types functional --format playwright --provider ollama --output test_spec.js --dummy
+python main.py generate-from-jira --ticket-id SJP-2 --types functional --format playwright --provider ollama --output test_spec.js --mode local
 ```
 
 ### 2.5 Troubleshooting
 
 #### Common Issues
-1. **"Jira config not available"** - Use `--dummy` flag for testing
+1. **"Jira config not available"** - Use `--mode local` for testing
 2. **"LLM parsing failed"** - Check if Ollama is running locally
 3. **"Invalid test type"** - Use only supported test types (functional, security, api, ui, performance, accessibility)
 
@@ -111,9 +115,9 @@ python main.py generate-from-jira --ticket-id SJP-2 --types functional --format 
 curl http://localhost:11434/api/tags
 ```
 
-#### Test with Dummy Data
+#### Test with Local Mode
 ```bash
-python main.py generate-from-jira --ticket-id TEST-123 --dummy --output test.feature
+python main.py generate-from-jira --ticket-id TEST-123 --mode local --output test.feature
 ```
 
 ## 3. Output Files

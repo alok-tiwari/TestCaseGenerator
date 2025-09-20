@@ -1,0 +1,3 @@
+As a facility manager
+I want to monitor equipment performance in real-time
+So that I can prevent equipment failures and optimize energy usage
