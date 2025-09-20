@@ -510,6 +510,69 @@ class JiraClient:
         
         return context
     
+    def _extract_system_context_from_local_content(self, content: str) -> Optional[Dict[str, Any]]:
+        """Extract system context from local file content."""
+        if not content:
+            return None
+        
+        context = {
+            'tech_stack': [],
+            'data_types': [],
+            'constraints': [],
+            'user_roles': [],
+            'business_domain': [],
+            'priority_level': 'medium',
+            'complexity': 'medium'
+        }
+        
+        content_lower = content.lower()
+        
+        # Extract tech stack based on content
+        if 'ipv4' in content_lower or 'ipv6' in content_lower:
+            context['tech_stack'].extend(['IPv4', 'IPv6', 'Network Protocol'])
+        if 'validation' in content_lower:
+            context['tech_stack'].append('Input Validation')
+        if 'configuration' in content_lower or 'settings' in content_lower:
+            context['tech_stack'].append('Configuration Management')
+        if 'diagnostics' in content_lower:
+            context['tech_stack'].append('System Diagnostics')
+        
+        # Extract data types
+        if 'ip address' in content_lower:
+            context['data_types'].extend(['IP Address', 'String', 'Network Address'])
+        if 'ipv4' in content_lower:
+            context['data_types'].append('IPv4 Address')
+        if 'ipv6' in content_lower:
+            context['data_types'].append('IPv6 Address')
+        
+        # Extract constraints
+        if 'spaces' in content_lower or 'special characters' in content_lower:
+            context['constraints'].append('No spaces or special characters allowed')
+        if 'blank' in content_lower or 'null' in content_lower:
+            context['constraints'].append('Default value must be blank/null')
+        if 'validation' in content_lower:
+            context['constraints'].append('Must validate IP address format')
+        
+        # Extract user roles
+        if 'user' in content_lower:
+            context['user_roles'].append('End User')
+        if 'configuration' in content_lower:
+            context['user_roles'].append('System Administrator')
+        
+        # Extract business domain
+        if 'ip address' in content_lower or 'network' in content_lower:
+            context['business_domain'].append('Network Configuration')
+        if 'device' in content_lower:
+            context['business_domain'].append('Device Management')
+        
+        # Determine priority and complexity based on content
+        if 'critical' in content_lower or 'offline' in content_lower:
+            context['priority_level'] = 'high'
+        if 'validation' in content_lower and 'ipv6' in content_lower:
+            context['complexity'] = 'high'
+        
+        return context
+    
     def _extract_technical_terms(self, text: str) -> List[str]:
         """Extract technical terms from text."""
         import re

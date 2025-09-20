@@ -372,7 +372,7 @@ User Story:
     
     def _get_functional_test_template(self) -> str:
         """Get template for functional test generation."""
-        return """Generate exactly 5 functional test cases for the following requirements:
+        return """Generate exactly 5 FUNCTIONAL test cases for the following requirements:
 
 Acceptance Criteria:
 {acceptance_criteria}
@@ -381,6 +381,15 @@ Acceptance Criteria:
 
 System Context:
 {system_context}
+
+CRITICAL REQUIREMENTS - FUNCTIONAL TEST CASES ONLY:
+- Generate ONLY positive flows with valid inputs and standard user actions
+- Include default values and mandatory field handling
+- Test role-based access and permissions
+- Verify system responses to valid actions
+- DO NOT include invalid inputs, boundary values, negative numbers, special characters
+- DO NOT include performance, concurrency, or security tests
+- Focus on happy path scenarios and normal user workflows
 
 OUTPUT FORMAT - Generate EXACTLY in this format:
 
@@ -410,15 +419,15 @@ WHEN: [Action]
 THEN: [Expected Result]
 
 IMPORTANT:
-- Generate exactly 5 test cases
+- Generate exactly 5 FUNCTIONAL test cases
 - Use the exact format above
-- Make titles specific to the feature
+- Focus on positive flows and valid scenarios only
 - Include realistic scenarios based on the acceptance criteria
 - Keep each test case concise and focused
 - Ensure test steps are detailed and executable
 - Follow the specified output format: {output_format}
 
-Generate 5-8 meaningful test cases that thoroughly test the described functionality."""
+Generate 5 meaningful FUNCTIONAL test cases that test normal user workflows and valid system behavior."""
 
     def _get_edge_case_template(self) -> str:
         """Get template for edge case test generation."""
@@ -439,6 +448,13 @@ Focus on:
 4. Performance edge cases
 5. Security edge cases
 6. Data edge cases
+
+SPECIAL INSTRUCTIONS:
+- If the system context mentions IP addresses, IPv4, or IPv6, focus on IP validation edge cases
+- Include test cases for invalid IP formats, spaces in IP addresses, special characters
+- Test both IPv4 and IPv6 validation scenarios
+- Include boundary conditions like maximum length, invalid characters, malformed addresses
+- Test default values and blank/null handling
 
 OUTPUT FORMAT - Generate EXACTLY in this format:
 

@@ -29,6 +29,10 @@ class EdgeCaseGenerator(BaseTestGenerator):
             # Generate test cases using LLM
             llm_response = await self._generate_with_llm(request, "edge_case_test")
             
+            # Debug logging
+            logger.info(f"LLM Response length: {len(llm_response)} characters")
+            logger.debug(f"LLM Response: {llm_response[:500]}...")
+            
             # Parse the response
             test_cases = self._parse_llm_response(llm_response, request)
             
@@ -67,27 +71,278 @@ class EdgeCaseGenerator(BaseTestGenerator):
         
         test_cases = []
         
+        # Check if this is IP validation related based on system context
+        is_ip_validation = False
+        if request.system_context:
+            tech_stack = getattr(request.system_context, 'tech_stack', [])
+            if any('ip' in str(tech).lower() for tech in tech_stack):
+                is_ip_validation = True
+        
+        if is_ip_validation:
+            # Generate IP validation specific edge cases
+            test_cases.extend(self._generate_ip_validation_edge_cases(request))
+        else:
+            # Generate generic edge cases
+            test_cases.extend(self._generate_generic_edge_cases(request))
+        
+        return test_cases
+    
+    def _generate_ip_validation_edge_cases(self, request: TestCaseRequest) -> List[TestCase]:
+        """Generate IP validation specific edge cases."""
+        edge_cases = []
+        
+        # IPv4 boundary and invalid input edge cases
+        ipv4_edge_cases = [
+            {
+                "title": "IPv4 Maximum Value Boundary",
+                "description": "Test IPv4 address with maximum valid value (255.255.255.255)",
+                "test_data": "255.255.255.255",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter IPv4 address: 255.255.255.255",
+                    "Click Save button"
+                ],
+                "expected_result": "System accepts the maximum valid IPv4 address"
+            },
+            {
+                "title": "IPv4 Invalid Octet Values",
+                "description": "Test IPv4 address with octet values exceeding 255",
+                "test_data": "256.1.1.1, 1.256.1.1, 1.1.256.1, 1.1.1.256",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv4 address: 256.1.1.1",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IP address format. Each octet must be 0-255'"
+            },
+            {
+                "title": "IPv4 Negative Octet Values",
+                "description": "Test IPv4 address with negative octet values",
+                "test_data": "-1.1.1.1, 1.-1.1.1, 1.1.-1.1, 1.1.1.-1",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv4 address: -1.1.1.1",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IP address format. Negative values not allowed'"
+            },
+            {
+                "title": "IPv4 Missing Octets",
+                "description": "Test IPv4 address with missing octets",
+                "test_data": "192.168.1, 192.168, 192",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter incomplete IPv4 address: 192.168.1",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IP address format. Must contain exactly 4 octets'"
+            },
+            {
+                "title": "IPv4 Extra Octets",
+                "description": "Test IPv4 address with too many octets",
+                "test_data": "192.168.1.1.1, 192.168.1.1.1.1",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv4 address: 192.168.1.1.1",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IP address format. Must contain exactly 4 octets'"
+            },
+            {
+                "title": "IPv4 Non-Numeric Characters",
+                "description": "Test IPv4 address with non-numeric characters",
+                "test_data": "192.168.1.a, 192.168.a.1, 192.a.1.1, a.168.1.1",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv4 address: 192.168.1.a",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IP address format. Only numeric values allowed'"
+            },
+            {
+                "title": "IPv4 Spaces and Special Characters",
+                "description": "Test IPv4 address with spaces and special characters",
+                "test_data": "192.168.1.1 , 192.168.1.1@, 192.168.1.1#",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv4 address: '192.168.1.1 ' (with trailing space)",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IP address format. Spaces and special characters not allowed'"
+            }
+        ]
+        
+        # IPv6 boundary and invalid input edge cases
+        ipv6_edge_cases = [
+            {
+                "title": "IPv6 Valid Full Address",
+                "description": "Test IPv6 address with full 8 groups",
+                "test_data": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter valid IPv6 address: 2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                    "Click Save button"
+                ],
+                "expected_result": "System accepts the valid IPv6 address"
+            },
+            {
+                "title": "IPv6 Compressed Zero Groups",
+                "description": "Test IPv6 address with compressed zero groups (::)",
+                "test_data": "2001:db8::1, ::1, 2001:db8:85a3::8a2e:0370:7334",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter valid IPv6 address: 2001:db8::1",
+                    "Click Save button"
+                ],
+                "expected_result": "System accepts the compressed IPv6 address"
+            },
+            {
+                "title": "IPv6 Invalid Characters",
+                "description": "Test IPv6 address with invalid hexadecimal characters",
+                "test_data": "2001:0db8:85a3:g000::1, 2001:0db8:85a3:z000::1",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv6 address: 2001:0db8:85a3:g000::1",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IPv6 address format. Only hexadecimal characters allowed'"
+            },
+            {
+                "title": "IPv6 Multiple Zero Compressions",
+                "description": "Test IPv6 address with multiple :: compressions",
+                "test_data": "2001::db8::1, 2001:db8::85a3::1",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv6 address: 2001::db8::1",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IPv6 address format. Only one :: compression allowed'"
+            },
+            {
+                "title": "IPv6 Too Many Groups",
+                "description": "Test IPv6 address with too many groups",
+                "test_data": "2001:0db8:85a3:0000:0000:8a2e:0370:7334:1",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv6 address: 2001:0db8:85a3:0000:0000:8a2e:0370:7334:1",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IPv6 address format. Too many groups'"
+            },
+            {
+                "title": "IPv6 Too Few Groups",
+                "description": "Test IPv6 address with too few groups",
+                "test_data": "2001:0db8:85a3:0000:0000:8a2e:0370",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv6 address: 2001:0db8:85a3:0000:0000:8a2e:0370",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IPv6 address format. Too few groups'"
+            },
+            {
+                "title": "IPv6 Group Too Long",
+                "description": "Test IPv6 address with group longer than 4 characters",
+                "test_data": "2001:0db8:85a3:00000:0000:8a2e:0370:7334",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter invalid IPv6 address: 2001:0db8:85a3:00000:0000:8a2e:0370:7334",
+                    "Click Save button"
+                ],
+                "expected_result": "System displays error: 'Invalid IPv6 address format. Each group must be 1-4 characters'"
+            }
+        ]
+        
+        # Default value and blank handling edge cases
+        default_edge_cases = [
+            {
+                "title": "Blank IP Address Field",
+                "description": "Test behavior when IP address field is left blank",
+                "test_data": "",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Leave IP address field blank",
+                    "Click Save button"
+                ],
+                "expected_result": "System accepts blank value and sets default to blank/null"
+            },
+            {
+                "title": "Null IP Address Value",
+                "description": "Test behavior when IP address field is set to null",
+                "test_data": "null",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter 'null' in IP address field",
+                    "Click Save button"
+                ],
+                "expected_result": "System accepts null value and sets default to blank/null"
+            },
+            {
+                "title": "Whitespace Only IP Address",
+                "description": "Test behavior when IP address field contains only whitespace",
+                "test_data": "   , \t, \n",
+                "steps": [
+                    "Navigate to IP address configuration field",
+                    "Enter only spaces in IP address field: '   '",
+                    "Click Save button"
+                ],
+                "expected_result": "System trims whitespace and treats as blank value"
+            }
+        ]
+        
+        # Combine all edge cases
+        all_edge_cases = ipv4_edge_cases + ipv6_edge_cases + default_edge_cases
+        
+        for i, case in enumerate(all_edge_cases, 1):
+            steps = []
+            for j, step in enumerate(case["steps"], 1):
+                steps.append(self._create_test_step(
+                    step_number=j,
+                    action=step,
+                    expected_result=case["expected_result"] if j == len(case["steps"]) else "Action completed successfully",
+                    notes=f"IP validation edge case step {j}"
+                ))
+            
+            edge_cases.append(TestCase(
+                test_id=self._generate_test_id("EDGE-IP"),
+                title=case["title"],
+                description=case["description"],
+                test_type=TestType.EDGE,
+                priority=TestPriority.HIGH,
+                test_level=request.test_specification.test_level,
+                steps=steps,
+                tags=["edge-case", "ip-validation", "boundary-testing"],
+                requirements=[f"Generated from JIRA ticket: {request.jira_ticket_id}"] if request.jira_ticket_id else [],
+                jira_ticket_id=request.jira_ticket_id
+            ))
+        
+        return edge_cases
+    
+    def _generate_generic_edge_cases(self, request: TestCaseRequest) -> List[TestCase]:
+        """Generate generic edge cases when not IP validation specific."""
+        edge_cases = []
+        
         # Generate boundary value test cases
         boundary_cases = self._generate_boundary_value_cases(request)
-        test_cases.extend(boundary_cases)
+        edge_cases.extend(boundary_cases)
         
         # Generate negative scenario test cases
         negative_cases = self._generate_negative_scenario_cases(request)
-        test_cases.extend(negative_cases)
+        edge_cases.extend(negative_cases)
         
         # Generate error handling test cases
         error_cases = self._generate_error_handling_cases(request)
-        test_cases.extend(error_cases)
+        edge_cases.extend(error_cases)
         
         # Generate data edge case test cases
         data_edge_cases = self._generate_data_edge_cases(request)
-        test_cases.extend(data_edge_cases)
+        edge_cases.extend(data_edge_cases)
         
         # Generate performance edge case test cases
         performance_cases = self._generate_performance_edge_cases(request)
-        test_cases.extend(performance_cases)
+        edge_cases.extend(performance_cases)
         
-        return test_cases
+        return edge_cases
     
     def _generate_boundary_value_cases(self, request: TestCaseRequest) -> List[TestCase]:
         """Generate boundary value test cases."""
@@ -612,17 +867,29 @@ class EdgeCaseGenerator(BaseTestGenerator):
         try:
             logger.info("Starting edge case LLM response parsing")
             
-            # Parse the simple TEST_CASE_X format
-            test_case_pattern = r'TEST_CASE_(\d+):\s*(.+?)\n\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\n\nTEST_CASE_|\Z)'
+            # Parse the simple TEST_CASE_X format (with optional quotes around title)
+            test_case_pattern = r'TEST_CASE_(\d+):\s*"?([^"]+)"?\s*\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\n\nTEST_CASE_|\Z)'
             matches = re.findall(test_case_pattern, response, re.DOTALL)
             
             logger.info(f"First pattern found {len(matches)} matches")
             
             # If no matches, try a simpler pattern (without double newline before GIVEN)
             if not matches:
-                test_case_pattern = r'TEST_CASE_(\d+):\s*(.+?)\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\nTEST_CASE_|\Z)'
+                test_case_pattern = r'TEST_CASE_(\d+):\s*"?([^"]+)"?\s*\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\nTEST_CASE_|\Z)'
                 matches = re.findall(test_case_pattern, response, re.DOTALL)
                 logger.info(f"Second pattern found {len(matches)} matches")
+            
+            # If still no matches, try with no newline between title and GIVEN
+            if not matches:
+                test_case_pattern = r'TEST_CASE_(\d+):\s*"?([^"]+)"?\s*GIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\nTEST_CASE_|\Z)'
+                matches = re.findall(test_case_pattern, response, re.DOTALL)
+                logger.info(f"Third pattern found {len(matches)} matches")
+            
+            # If still no matches, try with double newline between title and GIVEN
+            if not matches:
+                test_case_pattern = r'TEST_CASE_(\d+):\s*"?([^"]+)"?\s*\n\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\n\nTEST_CASE_|\Z)'
+                matches = re.findall(test_case_pattern, response, re.DOTALL)
+                logger.info(f"Fourth pattern found {len(matches)} matches")
             
             logger.info(f"Total matches found: {len(matches)}")
             

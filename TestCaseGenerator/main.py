@@ -219,10 +219,10 @@ def generate_from_jira(ticket_id, out_format, types, level, priority, provider, 
 
     async def _run():
         if mode == "local":
-            jira_client = None
             # Create a dummy config with the specified story format
             jira_conf.user_story_format = story_format
-            ticket = JiraClient(jira_conf).generate_dummy_ticket(ticket_id)
+            jira_client = JiraClient(jira_conf)
+            ticket = jira_client.generate_dummy_ticket(ticket_id)
         else:
             # Update the config with the specified parameters
             jira_conf.user_story_format = story_format
@@ -239,10 +239,20 @@ def generate_from_jira(ticket_id, out_format, types, level, priority, provider, 
             if story_parts:
                 user_story = UserStory(persona=story_parts["persona"], action=story_parts["action"], value=story_parts["value"])
             
-            # Extract system context from JIRA ticket
+            # Extract system context from JIRA ticket or local file
             system_context = None
             if mode == "online" and jira_client and jira_conf.extract_context:
                 context_data = jira_client._extract_system_context(ticket.issue.fields)
+                if context_data:
+                    system_context = SystemContext(
+                        tech_stack=context_data.get('tech_stack', []),
+                        data_types=context_data.get('data_types', []),
+                        constraints=context_data.get('constraints', []),
+                        user_roles=context_data.get('user_roles', [])
+                    )
+            elif mode == "local" and jira_conf.extract_context:
+                # Extract system context from local file content
+                context_data = jira_client._extract_system_context_from_local_content(ticket.user_story)
                 if context_data:
                     system_context = SystemContext(
                         tech_stack=context_data.get('tech_stack', []),
