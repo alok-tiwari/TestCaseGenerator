@@ -390,6 +390,8 @@ CRITICAL REQUIREMENTS - FUNCTIONAL TEST CASES ONLY:
 - DO NOT include invalid inputs, boundary values, negative numbers, special characters
 - DO NOT include performance, concurrency, or security tests
 - Focus on happy path scenarios and normal user workflows
+- Make test cases specific to the actual requirements and system context provided
+- Use realistic data and scenarios based on the acceptance criteria
 
 OUTPUT FORMAT - Generate EXACTLY in this format:
 
@@ -426,6 +428,7 @@ IMPORTANT:
 - Keep each test case concise and focused
 - Ensure test steps are detailed and executable
 - Follow the specified output format: {output_format}
+- Make test cases specific to the actual system context and requirements provided
 
 Generate 5 meaningful FUNCTIONAL test cases that test normal user workflows and valid system behavior."""
 
@@ -441,20 +444,14 @@ Acceptance Criteria:
 System Context:
 {system_context}
 
-Focus on:
-1. Boundary conditions
-2. Invalid inputs
-3. Error scenarios
-4. Performance edge cases
-5. Security edge cases
-6. Data edge cases
-
-SPECIAL INSTRUCTIONS:
-- If the system context mentions IP addresses, IPv4, or IPv6, focus on IP validation edge cases
-- Include test cases for invalid IP formats, spaces in IP addresses, special characters
-- Test both IPv4 and IPv6 validation scenarios
-- Include boundary conditions like maximum length, invalid characters, malformed addresses
-- Test default values and blank/null handling
+CRITICAL REQUIREMENTS - EDGE CASE TESTING ONLY:
+- Generate ONLY edge cases that test boundary conditions, invalid inputs, and error scenarios
+- Focus on boundary values, extreme inputs, and failure modes
+- Test invalid data formats, malformed inputs, and error conditions
+- Include performance edge cases, security edge cases, and data edge cases
+- Test default values, blank/null handling, and extreme scenarios
+- Make test cases specific to the actual requirements and system context provided
+- Use realistic edge case scenarios based on the acceptance criteria
 
 OUTPUT FORMAT - Generate EXACTLY in this format:
 
@@ -492,8 +489,9 @@ IMPORTANT:
 - Keep each test case concise and focused
 - Ensure test steps are detailed and executable
 - Follow the specified output format: {output_format}
+- Make test cases specific to the actual system context and requirements provided
 
-Generate 5-8 meaningful edge case test scenarios that explore the limits and failure modes of the system."""
+Generate 5 meaningful edge case test scenarios that explore the limits and failure modes of the system."""
 
     def _get_security_test_template(self) -> str:
         """Get template for security test generation."""
