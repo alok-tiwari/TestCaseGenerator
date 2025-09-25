@@ -298,7 +298,8 @@ class LLMClient:
             "test_specification": request.test_specification,
             "output_format": request.test_specification.output_format,
             "test_level": request.test_specification.test_level,
-            "priority": request.test_specification.priority
+            "priority": request.test_specification.priority,
+            "format_instructions": self._get_format_instructions(request.test_specification.output_format)
         }
         
         # Format the prompt
@@ -370,30 +371,65 @@ User Story:
         
         return "\n".join(context_parts) if context_parts else "No system context details provided"
     
-    def _get_functional_test_template(self) -> str:
-        """Get template for functional test generation."""
-        return """Generate exactly 5 FUNCTIONAL test cases for the following requirements:
+    def _get_format_instructions(self, output_format: str) -> str:
+        """Get format instructions based on the output format."""
+        if output_format == "step-driven":
+            return """Generate test cases in this EXACT step-driven format:
 
-Acceptance Criteria:
-{acceptance_criteria}
+TEST_CASE_1: [Test Case Title]
+Steps:
+	1.	[Step 1 description]
+	2.	[Step 2 description]
+	3.	[Step 3 description]
+Test Data: [Input values to use]
+Expected Result: [What should happen]
+Actual Result: [Leave blank if not executed yet]
 
-{user_story}
+TEST_CASE_2: [Test Case Title]
+Steps:
+	1.	[Step 1 description]
+	2.	[Step 2 description]
+	3.	[Step 3 description]
+Test Data: [Input values to use]
+Expected Result: [What should happen]
+Actual Result: [Leave blank if not executed yet]
 
-System Context:
-{system_context}
+TEST_CASE_3: [Test Case Title]
+Steps:
+	1.	[Step 1 description]
+	2.	[Step 2 description]
+	3.	[Step 3 description]
+Test Data: [Input values to use]
+Expected Result: [What should happen]
+Actual Result: [Leave blank if not executed yet]
 
-CRITICAL REQUIREMENTS - FUNCTIONAL TEST CASES ONLY:
-- Generate ONLY positive flows with valid inputs and standard user actions
-- Include default values and mandatory field handling
-- Test role-based access and permissions
-- Verify system responses to valid actions
-- DO NOT include invalid inputs, boundary values, negative numbers, special characters
-- DO NOT include performance, concurrency, or security tests
-- Focus on happy path scenarios and normal user workflows
-- Make test cases specific to the actual requirements and system context provided
-- Use realistic data and scenarios based on the acceptance criteria
+TEST_CASE_4: [Test Case Title]
+Steps:
+	1.	[Step 1 description]
+	2.	[Step 2 description]
+	3.	[Step 3 description]
+Test Data: [Input values to use]
+Expected Result: [What should happen]
+Actual Result: [Leave blank if not executed yet]
 
-OUTPUT FORMAT - Generate EXACTLY in this format:
+TEST_CASE_5: [Test Case Title]
+Steps:
+	1.	[Step 1 description]
+	2.	[Step 2 description]
+	3.	[Step 3 description]
+Test Data: [Input values to use]
+Expected Result: [What should happen]
+Actual Result: [Leave blank if not executed yet]
+
+CRITICAL FORMAT REQUIREMENTS FOR STEP-DRIVEN:
+- Start with TEST_CASE_1, TEST_CASE_2, etc.
+- Each test case must have Steps, Test Data, Expected Result, Actual Result sections
+- Steps must be numbered 1, 2, 3 with tab indentation
+- NO "Test Case ID:" or "Test Case Name:" format
+- NO "GIVEN/WHEN/THEN" format
+- Generate exactly 5 test cases in this exact format"""
+        else:
+            return """Generate test cases in this EXACT format:
 
 TEST_CASE_1: [Test Case Title]
 GIVEN: [Precondition]
@@ -420,14 +456,45 @@ GIVEN: [Precondition]
 WHEN: [Action]
 THEN: [Expected Result]
 
-IMPORTANT:
-- Generate exactly 5 FUNCTIONAL test cases
-- Use the exact format above
-- Focus on positive flows and valid scenarios only
-- Include realistic scenarios based on the acceptance criteria
-- Keep each test case concise and focused
-- Ensure test steps are detailed and executable
-- Follow the specified output format: {output_format}
+CRITICAL FORMAT REQUIREMENTS:
+- Start with TEST_CASE_1, TEST_CASE_2, etc.
+- Each test case must have exactly 3 lines: GIVEN, WHEN, THEN
+- Use colons after GIVEN, WHEN, THEN
+- NO empty lines between GIVEN, WHEN, THEN
+- NO "Test Case ID:" or "Test Case Name:" format
+- NO "Steps:" or "Test Data:" sections
+- Generate exactly 5 test cases in this exact format"""
+    
+    def _get_functional_test_template(self) -> str:
+        """Get template for functional test generation."""
+        return """Generate exactly 5 FUNCTIONAL test cases for the following requirements:
+
+Acceptance Criteria:
+{acceptance_criteria}
+
+{user_story}
+
+System Context:
+{system_context}
+
+CRITICAL REQUIREMENTS - FUNCTIONAL TEST CASES ONLY:
+- Generate ONLY positive flows with valid inputs and standard user actions
+- Include default values and mandatory field handling
+- Test role-based access and permissions
+- Verify system responses to valid actions
+- DO NOT include invalid inputs, boundary values, negative numbers, special characters
+- DO NOT include performance, concurrency, or security tests
+- Focus on happy path scenarios and normal user workflows
+- Make test cases specific to the actual requirements and system context provided
+- Use realistic data and scenarios based on the acceptance criteria
+
+OUTPUT FORMAT - Generate EXACTLY in this format based on the output format: {output_format}
+
+{format_instructions}
+
+CRITICAL FORMAT REQUIREMENTS:
+- Generate exactly 5 test cases in the specified format
+- Do not deviate from the specified format under any circumstances
 - Make test cases specific to the actual system context and requirements provided
 
 Generate 5 meaningful FUNCTIONAL test cases that test normal user workflows and valid system behavior."""

@@ -1,0 +1,39 @@
+Test Case ID: TC-20250925-001
+Test Case Name: Valid User Login
+Steps:
+	1.	Open the application as an End User with a valid IP address (192.168.100) and username (user123).
+	2.	Enter the correct password for user123.
+	3.	Click the "Login" button to access the system.
+Test Data: Input values as specified in steps
+Expected Result: Expected result as specified in test steps
+Actual Result:
+
+Test Case ID: TC-20250925-002
+Test Case Name: System Administrator Access
+Steps:
+	1.	Open the application as a System Administrator with a valid IP address (2001:0db8:85a3:0000:0000:8a2e:0370:7334).
+	2.	Access the system configuration page.
+	3.	Verify that the system configuration is displayed correctly and can be edited by the administrator.
+Test Data: Input values as specified in steps
+Expected Result: Expected result as specified in test steps
+Actual Result:
+
+Test Case ID: TC-20250925-003
+Test Case Name: Invalid User Login
+Steps:
+	1.	Open the application as an End User with a valid IP address (192.168.100) and invalid username (user123).
+	2.	Enter an incorrect password for user123.
+	3.	Click the "Login" button to access the system.
+Test Data: Input values as specified in steps
+Expected Result: Expected result as specified in test steps
+Actual Result:
+
+Test Case ID: TC-20250925-004
+Test Case Name: System Configuration Update
+Steps:
+	1.	Open the application as a System Administrator with a valid IP address (2001:0db8:85a3:0000:0000:8a2e:0370:7334) and access the system configuration page.
+	2.	Update the system configuration values.
+	3.	Verify that the updated configuration is saved correctly.
+Test Data: Input values as specified in steps
+Expected Result: Expected result as specified in test steps
+Actual Result:

@@ -88,7 +88,7 @@ class JiraClient:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.warning(f"Ticket {ticket_id} not found")
-                raise ValueError(f"Ticket {ticket_id} not found. Use --dummy flag for testing with sample data.")
+                raise ValueError(f"Ticket {ticket_id} not found. Use --mode local for testing with sample data.")
             elif e.response.status_code == 401:
                 logger.error(f"Authentication failed for ticket {ticket_id}")
                 raise ValueError("Authentication failed - check Jira credentials")

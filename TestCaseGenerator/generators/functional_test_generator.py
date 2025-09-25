@@ -399,11 +399,23 @@ class FunctionalTestGenerator(BaseTestGenerator):
         try:
             logger.info("Starting functional LLM response parsing")
             
+            # First, try to parse the old format (Test Case ID: TC-xxx)
+            old_format_pattern = r'Test Case ID:\s*([^\n]+)\nTest Case Name:\s*([^\n]+)\n\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\n\nTest Case ID:|\nTEST_CASE_|\Z)'
+            old_matches = re.findall(old_format_pattern, response, re.DOTALL)
+            
+            # Convert old format matches to new format
+            matches = []
+            for i, (test_id, title, given, when, then) in enumerate(old_matches, 1):
+                matches.append((str(i), title.strip(), given.strip(), when.strip(), then.strip()))
+            
+            logger.info(f"Old format found {len(matches)} matches")
+            
             # Parse the simple TEST_CASE_X format (with optional quotes around title)
             test_case_pattern = r'TEST_CASE_(\d+):\s*"?([^"]+)"?\s*\nGIVEN\s+(.+?)\nWHEN\s+(.+?)\nTHEN\s+(.+?)(?=\n\nTEST_CASE_|\Z)'
-            matches = re.findall(test_case_pattern, response, re.DOTALL)
+            new_matches = re.findall(test_case_pattern, response, re.DOTALL)
+            matches.extend(new_matches)
             
-            logger.info(f"First pattern found {len(matches)} matches")
+            logger.info(f"New format found {len(new_matches)} matches")
             
             # If no matches, try with single newline between title and GIVEN
             if not matches:
@@ -441,8 +453,8 @@ class FunctionalTestGenerator(BaseTestGenerator):
                 matches = re.findall(test_case_pattern, response, re.DOTALL)
                 logger.info(f"Sixth pattern found {len(matches)} matches")
             
-            # If still no matches, try with more flexible pattern that handles mixed formats
-            if not matches:
+            # Always try the flexible pattern to catch any missed test cases
+            if len(matches) < 5:
                 # Split by TEST_CASE_ and parse each section individually
                 sections = re.split(r'TEST_CASE_(\d+):', response)
                 if len(sections) > 1:
@@ -466,6 +478,30 @@ class FunctionalTestGenerator(BaseTestGenerator):
                                     when = when_match.group(1).strip()
                                     then = then_match.group(1).strip()
                                     matches.append((case_num, title, given, when, then))
+                                else:
+                                    # Try to parse step-driven format
+                                    steps_match = re.search(r'Steps:\s*\n(.+?)(?=\nTest Data:|\Z)', content, re.DOTALL)
+                                    if steps_match:
+                                        steps_content = steps_match.group(1).strip()
+                                        # Extract steps and convert to GIVEN/WHEN/THEN
+                                        step_lines = [line.strip() for line in steps_content.split('\n') if line.strip() and line.strip().startswith(('1.', '2.', '3.'))]
+                                        if len(step_lines) >= 3:
+                                            given = step_lines[0].replace('1.', '').strip()
+                                            when = step_lines[1].replace('2.', '').strip()
+                                            then = step_lines[2].replace('3.', '').strip()
+                                            matches.append((case_num, title, given, when, then))
+                                    else:
+                                        # Try to parse any remaining content as GIVEN/WHEN/THEN
+                                        # Look for any GIVEN/WHEN/THEN pattern in the content
+                                        given_match = re.search(r'GIVEN\s+(.+?)(?=\nWHEN|\Z)', content, re.DOTALL)
+                                        when_match = re.search(r'WHEN\s+(.+?)(?=\nTHEN|\Z)', content, re.DOTALL)
+                                        then_match = re.search(r'THEN\s+(.+?)(?=\n\n|\Z)', content, re.DOTALL)
+                                        
+                                        if given_match and when_match and then_match:
+                                            given = given_match.group(1).strip()
+                                            when = when_match.group(1).strip()
+                                            then = then_match.group(1).strip()
+                                            matches.append((case_num, title, given, when, then))
                 
                 logger.info(f"Flexible pattern found {len(matches)} matches")
             
